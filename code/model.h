@@ -15,6 +15,8 @@ extern "C" {
     void rendering(Model model);
     void drawModel(Model model);
 
+    extern Model global_model1;
+
 #ifdef __cplusplus
 }
 #endif

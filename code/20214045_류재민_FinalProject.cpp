@@ -1,22 +1,25 @@
 ﻿#pragma warning(disable:4996)
 
-#include "model.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <GL/glut.h>
+#include <math.h>
+#include "model.h"
+#include "camera.h"
 
-Model global_model1;
-
+// 조명 설정
 GLfloat lightPosition[4] = { 0.0, 0.0, -1.0, 1.0 }; // 앞쪽에서 조명
 GLfloat ambientLight[4] = { 0.2, 0.2, 0.2, 1.0 };   // 약한 주변광
 GLfloat diffuseLight[4] = { 0.4, 0.4, 0.4, 1.0 };   // 약한 산란광
 GLfloat specular[4] = { 0.3, 0.3, 0.3, 1.0 };       // 약한 반사광
+
+// 뷰포트 위치 배열
 int viewport_pos[16] = {
-    0, 0, 400, 400,     // 1: 옆
-    400, 0, 400, 400,   // 2: 앞
-    0, 400, 400, 400,   // 3: 무작위
-    400, 400, 400, 400  // 4: 위
+    0, 0, 400, 400,     // 0: 앞
+    400, 0, 400, 400,   // 1: 무작위
+    0, 400, 400, 400,   // 2: 위
+    400, 400, 400, 400  // 3: 옆
 };
 
 void drawLine();
@@ -28,34 +31,27 @@ void display() {
     glEnable(GL_NORMALIZE);
 
     /*
-    뷰 포트 위치
-    3 4
-    1 2
+    뷰 포트
+    2 3
+    0 1
     */
 
-	// 각 뷰 포트의 카메라 각도
+    // 각 뷰포트에 대해 카메라 설정 적용
     for (int i = 0; i < 4; i++) {
         glPushMatrix();
 
         glViewport(viewport_pos[i * 4], viewport_pos[i * 4 + 1], viewport_pos[i * 4 + 2], viewport_pos[i * 4 + 3]);
-        
-        glOrtho(-50, 50, -50, 50, 1.0, 500.0);
+
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        glOrtho(-50, 50, -50, 50, -50.0, 500.0);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
-        // 각 뷰포트에 맞는 카메라 시점 설정
-        if (i == 0) { // 앞
-            gluLookAt(0.0, 0.0, 50.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-        }
-        else if (i == 1) { // 무작위
-            gluLookAt(35.0, 25.0, 35.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-        }
-        else if (i == 2) { // 위
-            gluLookAt(0.0, 50.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0);
-        }
-        else if (i == 3) { // 옆
-            gluLookAt(50.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-        }
+        // 카메라 시점 설정
+        gluLookAt(cameras[i].eyeX, cameras[i].eyeY, cameras[i].eyeZ,
+            0.0, 0.0, 0.0,
+            cameras[i].upX, cameras[i].upY, cameras[i].upZ);
 
         // 발판
         glPushMatrix();
@@ -98,16 +94,59 @@ void reshape(int w, int h) {
     glLoadIdentity();
 }
 
+// 방향키 입력 처리
+void specialKeys(int key, int x, int y) {
+    if (selected_viewport == -1) return; // 뷰포트가 선택되지 않았으면 아무 동작 안 함
+
+    Camera* cam = &cameras[selected_viewport];
+    if (key == GLUT_KEY_UP) {
+        cam->theta -= 5.0; // 위로 이동
+    }
+    if (key == GLUT_KEY_DOWN) {
+        cam->theta += 5.0; // 아래로 이동
+    }
+    if (key == GLUT_KEY_LEFT) {
+        cam->phi -= 5.0; // 왼쪽으로 이동
+    }
+    if (key == GLUT_KEY_RIGHT) {
+        cam->phi += 5.0; // 오른쪽으로 이동
+    }
+
+    // theta와 phi의 범위 제한
+    if (cam->theta > 360.0) cam->theta = fmod((double)cam->theta, 360.0);
+    if (cam->phi > 360.0) cam->phi = fmod((double)cam->phi, 360.0);
+
+    eyePosition(selected_viewport);
+}
+
+// 일반 키 입력 처리
+void keyboard(unsigned char key, int x, int y) {
+    switch (key) {
+    case '1':
+        selected_viewport = 2; // 위
+        break;
+    case '2':
+        selected_viewport = 3; // 옆
+        break;
+    case '3':
+        selected_viewport = 0; // 앞
+        break;
+    case '4':
+        selected_viewport = 1; // 무작위
+        break;
+    }
+    glutPostRedisplay();
+}
+
 void drawRect() {
     glDisable(GL_LIGHTING);
     glColor3f(0.0f, 0.5f, 0.0f);
 
-	// 모델을 -20.0f 높이로 배치하여 발판 위에 놓이도록 함
     glBegin(GL_QUADS);
-    glVertex3f(-25.0f, -20.01f, -45.0f);
-    glVertex3f(25.0f, -20.01f, -45.0f);
-    glVertex3f(25.0f, -20.01f, 40.0f);
-    glVertex3f(-25.0f, -20.01f, 40.0f);
+    glVertex3f(-25.0f, -21.0f, -45.0f);
+    glVertex3f(25.0f, -21.0f, -45.0f);
+    glVertex3f(25.0f, -21.0f, 40.0f);
+    glVertex3f(-25.0f, -21.0f, 40.0f);
     glEnd();
 
     glEnable(GL_LIGHTING);
@@ -142,6 +181,8 @@ int main(int argc, char** argv) {
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
+    glutSpecialFunc(specialKeys); 
+    glutKeyboardFunc(keyboard);  
     glutMainLoop();
 
     for (int i = 0; i < global_model1.vNum; i++)

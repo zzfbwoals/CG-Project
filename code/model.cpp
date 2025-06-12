@@ -6,6 +6,8 @@
 #include <string.h>
 #include <GL/glut.h>
 
+Model global_model1;
+
 Model ObjLoad(const char* name) 
 {
     Model model = { 0 };

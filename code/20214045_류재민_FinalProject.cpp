@@ -1,46 +1,87 @@
 ﻿#pragma warning(disable:4996)
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <GL/glut.h>
-#include <math.h>
+#include <time.h>
 #include "model.h"
 #include "camera.h"
+#include "lodepng.h"
+
+// 모델
+Model model;
 
 // 조명 설정
-GLfloat lightPosition[4] = { 0.0, 0.0, -1.0, 1.0 }; // 앞쪽에서 조명
-GLfloat ambientLight[4] = { 0.2, 0.2, 0.2, 1.0 };   // 약한 주변광
-GLfloat diffuseLight[4] = { 0.4, 0.4, 0.4, 1.0 };   // 약한 산란광
-GLfloat specular[4] = { 0.3, 0.3, 0.3, 1.0 };       // 약한 반사광
+GLfloat lightPosition[4] = { 20.0, 20.0, 30.0, 1.0 };
+GLfloat ambientLight[4] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat diffuseLight[4] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat specular[4] = { 1.0, 1.0, 1.0, 1.0 };
+
+// 색상
+GLfloat floorColor[3] = { 0.0, 0.2, 0.0 }; // 바닥 기본 색상
+GLfloat modelColor[3] = { 0.4, 0.29, 0.0 }; // 모델 기본 색상
+
+// 상태
+int light = 1; // 조명 상태 (1: 켜짐, 0: 꺼짐)
+int viewport = -1; // 뷰포트 선택 상태 (-1은 선택되지 않음)
+int texture = 1; // 텍스처 상태 (0: 사용 안 함, 1: 사용)
 
 // 뷰포트 위치 배열
-int viewport_pos[16] = {
+int viewportPos[16] = {
     0, 0, 400, 400,     // 0: 앞
     400, 0, 400, 400,   // 1: 무작위
     0, 400, 400, 400,   // 2: 위
     400, 400, 400, 400  // 3: 옆
 };
 
+// 그리기
 void drawLine();
 void drawRect();
+
+// 메뉴 콜백 함수
+void menuCallback(int value) {
+    switch (value) {
+	case 0: // 바닥 색상 변경
+        floorColor[0] = (float)rand() / RAND_MAX; floorColor[1] = (float)rand() / RAND_MAX; floorColor[2] = (float)rand() / RAND_MAX;    
+        printf("바닥 색상 변경: RGB(%.2f, %.2f, %.2f)\n", floorColor[0], floorColor[1], floorColor[2]);  
+        break;
+	case 1: // 모델 색상 변경
+        modelColor[0] = (float)rand() / RAND_MAX; modelColor[1] = (float)rand() / RAND_MAX; modelColor[2] = (float)rand() / RAND_MAX;
+        printf("모델 색상 변경: RGB(%.2f, %.2f, %.2f)\n", modelColor[0], modelColor[1], modelColor[2]);
+        break;
+	case 2: // 조명 토글
+        light = !light;
+        if (light) {
+            glEnable(GL_LIGHT0);
+            printf("조명 On\n");
+        }
+        else {
+            glDisable(GL_LIGHT0);
+            printf("조명 Off\n");
+        }
+        break;
+	case 3: // 조명 색상 변경
+        ambientLight[0] = (float)rand() / RAND_MAX; ambientLight[1] = (float)rand() / RAND_MAX; ambientLight[2] = (float)rand() / RAND_MAX; // ambient
+        glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
+        diffuseLight[0] = (float)rand() / RAND_MAX; diffuseLight[1] = (float)rand() / RAND_MAX; diffuseLight[2] = (float)rand() / RAND_MAX; // diffuse
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
+        specular[0] = (float)rand() / RAND_MAX; specular[1] = (float)rand() / RAND_MAX; specular[2] = (float)rand() / RAND_MAX; // specular
+        glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+        printf("조명 색상 변경\n");
+        break;
+	case 4: // 텍스처 토글
+        // 텍스처 기능은 제외 (빈 동작)
+        printf("Texture toggle not implemented\n");
+        break;
+    }
+    glutPostRedisplay();
+}
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glShadeModel(GL_SMOOTH);
     glEnable(GL_NORMALIZE);
 
-    /*
-    뷰 포트
-    2 3
-    0 1
-    */
-
-    // 각 뷰포트에 대해 카메라 설정 적용
     for (int i = 0; i < 4; i++) {
         glPushMatrix();
 
-        glViewport(viewport_pos[i * 4], viewport_pos[i * 4 + 1], viewport_pos[i * 4 + 2], viewport_pos[i * 4 + 3]);
+        glViewport(viewportPos[i * 4], viewportPos[i * 4 + 1], viewportPos[i * 4 + 2], viewportPos[i * 4 + 3]);
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
@@ -48,30 +89,29 @@ void display() {
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
 
-        // 카메라 시점 설정
         gluLookAt(cameras[i].eyeX, cameras[i].eyeY, cameras[i].eyeZ,
             0.0, 0.0, 0.0,
             cameras[i].upX, cameras[i].upY, cameras[i].upZ);
 
-        // 발판
+        // 사각형 바닥 그리기
         glPushMatrix();
         drawRect();
         glPopMatrix();
 
-        // 모델
-        drawModel(global_model1);
+		// 모델 그리기
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, modelColor);
+        drawModel(model);
 
         glPopMatrix();
     }
 
-    // 전체 창에 중앙 십자선 그리기
     drawLine();
 
     glutSwapBuffers();
 }
 
 void init() {
-    global_model1 = ObjLoad("dino.obj");
+    model = ObjLoad("dino.obj");
 
     glClearColor(0.2, 0.2, 0.2, 0.0);
     glEnable(GL_DEPTH_TEST);
@@ -81,8 +121,23 @@ void init() {
     glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
     glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
 
+    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.001);
+    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0001);
+
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
+
+    // 랜덤 시드 초기화
+    srand(time(NULL));
+
+    // 팝업 메뉴 생성
+    glutCreateMenu(menuCallback);
+    glutAddMenuEntry("바닥 색상 변경", 0);
+    glutAddMenuEntry("모델 색상 변경", 1);
+    glutAddMenuEntry("조명 On/Off", 2);
+    glutAddMenuEntry("조명 색상 변경", 3);
+    glutAddMenuEntry("텍스처 On/Off", 4);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
 void reshape(int w, int h) {
@@ -94,45 +149,42 @@ void reshape(int w, int h) {
     glLoadIdentity();
 }
 
-// 방향키 입력 처리
 void specialKeys(int key, int x, int y) {
-    if (selected_viewport == -1) return; // 뷰포트가 선택되지 않았으면 아무 동작 안 함
+    if (viewport == -1) return;
 
-    Camera* cam = &cameras[selected_viewport];
+    Camera* c = &cameras[viewport];
     if (key == GLUT_KEY_UP) {
-        cam->theta -= 5.0; // 위로 이동
+        c->theta -= 5.0;
     }
     if (key == GLUT_KEY_DOWN) {
-        cam->theta += 5.0; // 아래로 이동
+        c->theta += 5.0;
     }
     if (key == GLUT_KEY_LEFT) {
-        cam->phi -= 5.0; // 왼쪽으로 이동
+        c->phi -= 5.0;
     }
     if (key == GLUT_KEY_RIGHT) {
-        cam->phi += 5.0; // 오른쪽으로 이동
+        c->phi += 5.0;
     }
 
-    // theta와 phi의 범위 제한
-    if (cam->theta > 360.0) cam->theta = fmod((double)cam->theta, 360.0);
-    if (cam->phi > 360.0) cam->phi = fmod((double)cam->phi, 360.0);
+    if (c->theta > 360.0) c->theta = fmod((double)c->theta, 360.0);
+    if (c->phi > 360.0) c->phi = fmod((double)c->phi, 360.0);
 
-    eyePosition(selected_viewport);
+    eyePosition(viewport);
 }
 
-// 일반 키 입력 처리
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {
     case '1':
-        selected_viewport = 2; // 위
+        viewport = 2; // 위
         break;
     case '2':
-        selected_viewport = 3; // 옆
+        viewport = 3; // 옆
         break;
     case '3':
-        selected_viewport = 0; // 앞
+        viewport = 0; // 앞
         break;
     case '4':
-        selected_viewport = 1; // 무작위
+        viewport = 1; // 무작위
         break;
     }
     glutPostRedisplay();
@@ -140,7 +192,7 @@ void keyboard(unsigned char key, int x, int y) {
 
 void drawRect() {
     glDisable(GL_LIGHTING);
-    glColor3f(0.0f, 0.5f, 0.0f);
+    glColor3f(floorColor[0], floorColor[1], floorColor[2]); // 동적 바닥 색상
 
     glBegin(GL_QUADS);
     glVertex3f(-25.0f, -21.0f, -45.0f);
@@ -181,16 +233,16 @@ int main(int argc, char** argv) {
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
-    glutSpecialFunc(specialKeys); 
-    glutKeyboardFunc(keyboard);  
+    glutSpecialFunc(specialKeys);
+    glutKeyboardFunc(keyboard);
     glutMainLoop();
 
-    for (int i = 0; i < global_model1.vNum; i++)
-        free(global_model1.vPoint[i]);
-    free(global_model1.vPoint);
+    for (int i = 0; i < model.vNum; i++)
+        free(model.vPoint[i]);
+    free(model.vPoint);
 
-    for (int i = 0; i < global_model1.fNum; i++)
-        free(global_model1.fPoint[i]);
-    free(global_model1.fPoint);
+    for (int i = 0; i < model.fNum; i++)
+        free(model.fPoint[i]);
+    free(model.fPoint);
     return 0;
 }

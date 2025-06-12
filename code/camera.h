@@ -1,4 +1,5 @@
 #pragma once
+#include <math.h>
 #include <GL/glut.h>
 
 typedef struct {
@@ -14,7 +15,7 @@ extern "C" {
     void eyePosition(int index);
 
     extern Camera cameras[4];
-    extern int selected_viewport;
+    extern int viewport;
 
 #ifdef __cplusplus
 }

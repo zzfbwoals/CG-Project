@@ -1,4 +1,8 @@
 #pragma once
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <GL/glut.h>
 
 typedef struct {
     double** vPoint;
@@ -15,7 +19,8 @@ extern "C" {
     void rendering(Model model);
     void drawModel(Model model);
 
-    extern Model global_model1;
+    extern Model model;
+    extern GLfloat modelColor[3];
 
 #ifdef __cplusplus
 }

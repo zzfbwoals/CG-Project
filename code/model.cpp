@@ -68,19 +68,30 @@ void calcNormal(double* v0, double* v1, double* v2, double* normal) {
     }
 }
 
-void rendering(Model model)
+void rendering(Model model, int sort)
 {
+	// 모델 색상 설정
+    if (!light) {
+        glDisable(GL_LIGHTING);
+        glColor3f(modelColor[0], modelColor[1], modelColor[2]);
+    }
+    else {
+        glEnable(GL_LIGHTING);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, modelColor);
+    }
+
     // 텍스처가 활성화된 경우에만 텍스처를 사용 - 함수 시작 시 한 번만 활성화
     if (texture) {
         glEnable(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, textureID[1]);
+        if(sort == 1) glBindTexture(GL_TEXTURE_2D, textureID[1]);
+        if(sort == 2) glBindTexture(GL_TEXTURE_2D, textureID[2]);
+        if(sort == 3) glBindTexture(GL_TEXTURE_2D, textureID[3]);
+        if(sort == 4) glBindTexture(GL_TEXTURE_2D, textureID[4]);
+        if(sort == 5) glBindTexture(GL_TEXTURE_2D, textureID[5]);
     }
     else {
         glDisable(GL_TEXTURE_2D);
     }
-
-    glTranslatef(0.0f, -20.0f, -10.0f);
-    glScalef(0.7f, 0.7f, 0.7f);
 
     for (int i = 0; i < model.fNum; i++) {
         double* v0 = model.vPoint[model.fPoint[i][0]];

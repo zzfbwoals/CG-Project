@@ -18,9 +18,9 @@ extern "C" {
 
     Model ObjLoad(const char* name);
 	void calcNormal(double* v0, double* v1, double* v2, double* normal);
-    void rendering(Model model);
+    void rendering(Model model, int sort);
 
-    extern Model model;
+    extern Model dino;
     extern GLfloat modelColor[3];
     extern int light;
 

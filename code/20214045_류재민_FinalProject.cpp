@@ -1,4 +1,5 @@
-﻿#pragma warning(disable:4996)
+﻿// 20214045_류재민_FinalProject
+#pragma warning(disable:4996)
 #include <time.h>
 #include <iostream>
 #include "model.h"
@@ -6,7 +7,11 @@
 #include "lodepng.h"
 
 // 모델
-Model model;
+Model dino;
+Model eye;
+Model eyeground;
+Model teeth;
+Model horn;
 
 // 조명 설정
 GLfloat lightPosition[4] = { 20.0, 20.0, 30.0, 1.0 };
@@ -15,10 +20,10 @@ GLfloat specular[4] = { 1.0, 1.0, 1.0, 1.0 };
 
 // 색상
 GLfloat floorColor[3] = { 0.7, 0.7, 0.7 }; // 바닥 기본 색상
-GLfloat modelColor[3] = { 0.7, 0.7, 0.7 }; // 모델 기본 색상
+GLfloat modelColor[3] = { 1.0, 1.0, 1.0 }; // 모델 기본 색상
 
 // 텍스처
-GLuint textureID[2];
+GLuint textureID[6];
 
 // 상태
 int light = 1; // 조명 상태 (1: 켜짐, 0: 꺼짐)
@@ -62,16 +67,14 @@ void display() {
         drawRect();
         glPopMatrix();
 
-		// 모델 그리기
-		if (!light) { 
-            glDisable(GL_LIGHTING);
-            glColor3f(modelColor[0], modelColor[1], modelColor[2]);
-        }
-		else { 
-            glEnable(GL_LIGHTING);
-            glMaterialfv(GL_FRONT, GL_DIFFUSE, modelColor);
-        }
-        rendering(model);
+        // 모델 그리기
+        glTranslatef(0.0f, -20.0f, -10.0f);
+        glScalef(0.7f, 0.7f, 0.7f);
+		rendering(dino, 1);
+		rendering(eye, 2);
+        rendering(eyeground, 3);
+		rendering(teeth, 4);
+        rendering(horn, 5);
 
         glPopMatrix();
     }
@@ -228,7 +231,11 @@ void initTexture(GLuint* texture, const char* path)
 }
 
 void init() {
-    model = ObjLoad("dino.obj");
+    dino = ObjLoad("dino.obj");
+	eye = ObjLoad("eye.obj");
+	eyeground = ObjLoad("eyeground.obj");
+	teeth = ObjLoad("teeth.obj");
+	horn = ObjLoad("horn.obj");
 
     glClearColor(0.2, 0.2, 0.2, 0.0);
     glEnable(GL_DEPTH_TEST);
@@ -259,6 +266,10 @@ void init() {
     // 텍스처 이미지 불러오기
     initTexture(&textureID[0], "ground.png"); // 바닥 텍스처
     initTexture(&textureID[1], "dino.png");   // 공룡 텍스처 
+	initTexture(&textureID[2], "eye.png");    // 눈 텍스처
+	initTexture(&textureID[3], "eyeground.png"); // 눈 바닥 텍스처
+	initTexture(&textureID[4], "teeth.png"); // 이빨 텍스처
+	initTexture(&textureID[5], "horn.png"); // 뿔 텍스처
 }
 
 void reshape(int w, int h) {
@@ -268,6 +279,30 @@ void reshape(int w, int h) {
     glOrtho(-50, 50, -50, 50, 1.0, 500.0);
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
+}
+
+void free()
+{
+    for (int i = 0; i < dino.vNum; i++) free(dino.vPoint[i]);
+    free(dino.vPoint);
+    for (int i = 0; i < dino.fNum; i++) free(dino.fPoint[i]);
+    free(dino.fPoint);
+	for (int i = 0; i < eye.vNum; i++)free(eye.vPoint[i]);
+	free(eye.vPoint);
+	for (int i = 0; i < eye.fNum; i++)free(eye.fPoint[i]);
+	free(eye.fPoint);
+	for (int i = 0; i < eyeground.vNum; i++)free(eyeground.vPoint[i]);
+	free(eyeground.vPoint);
+	for (int i = 0; i < eyeground.fNum; i++)free(eyeground.fPoint[i]);
+	free(eyeground.fPoint);
+	for (int i = 0; i < teeth.vNum; i++)free(teeth.vPoint[i]);
+	free(teeth.vPoint);
+	for (int i = 0; i < teeth.fNum; i++)free(teeth.fPoint[i]);
+	free(teeth.fPoint);
+	for (int i = 0; i < horn.vNum; i++)free(horn.vPoint[i]);
+	free(horn.vPoint);
+	for (int i = 0; i < horn.fNum; i++)free(horn.fPoint[i]);
+	free(horn.fPoint);
 }
 
 int main(int argc, char** argv) {
@@ -284,13 +319,6 @@ int main(int argc, char** argv) {
     glutSpecialFunc(specialKeys);
     glutKeyboardFunc(keyboard);
     glutMainLoop();
-
-    for (int i = 0; i < model.vNum; i++)
-        free(model.vPoint[i]);
-    free(model.vPoint);
-
-    for (int i = 0; i < model.fNum; i++)
-        free(model.fPoint[i]);
-    free(model.fPoint);
+    free();
     return 0;
 }

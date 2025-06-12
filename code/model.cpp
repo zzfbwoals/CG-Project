@@ -6,17 +6,20 @@
 #include <string.h>
 #include <GL/glut.h>
 
-Model ObjLoad(const char* name) {
+Model ObjLoad(const char* name) 
+{
     Model model = { 0 };
     char line[256];
     FILE* fp = fopen(name, "r");
-    if (!fp) {
+    if (!fp) 
+    {
         printf("파일 열기 실패: %s\n", name);
         exit(1);
     }
 
     // 1차 패스: 개수 세기
-    while (fgets(line, sizeof(line), fp)) {
+    while (fgets(line, sizeof(line), fp)) 
+    {
         if (strncmp(line, "v ", 2) == 0) model.vNum++;
         else if (strncmp(line, "f ", 2) == 0) model.fNum++;
     }
@@ -32,12 +35,15 @@ Model ObjLoad(const char* name) {
         model.fPoint[i] = (int*)malloc(sizeof(int) * 3);
 
     int vCount = 0, fCount = 0;
-    while (fgets(line, sizeof(line), fp)) {
-        if (strncmp(line, "v ", 2) == 0) {
+    while (fgets(line, sizeof(line), fp)) 
+    {
+        if (strncmp(line, "v ", 2) == 0) 
+        {
             sscanf(line, "v %lf %lf %lf", &model.vPoint[vCount][0], &model.vPoint[vCount][1], &model.vPoint[vCount][2]);
             vCount++;
         }
-        else if (strncmp(line, "f ", 2) == 0) {
+        else if (strncmp(line, "f ", 2) == 0) 
+        {
             char v1[32], v2[32], v3[32];
             sscanf(line, "f %s %s %s", v1, v2, v3);
             sscanf(v1, "%d", &model.fPoint[fCount][0]);
@@ -54,7 +60,8 @@ Model ObjLoad(const char* name) {
     return model;
 }
 
-void rendering(Model model) {
+void rendering(Model model) 
+{
     glPointSize(5);
     glColor3f(0.9, 0.0, 0);
     glBegin(GL_POINTS);
@@ -63,7 +70,8 @@ void rendering(Model model) {
     glEnd();
 
     glColor3f(0.5, 0.5, 0.5);
-    for (int i = 0; i < model.fNum; i++) {
+    for (int i = 0; i < model.fNum; i++) 
+    {
         glBegin(GL_TRIANGLES);
         for (int j = 0; j < 3; j++)
             glVertex3f(model.vPoint[model.fPoint[i][j]][0], model.vPoint[model.fPoint[i][j]][1], model.vPoint[model.fPoint[i][j]][2]);
@@ -72,13 +80,22 @@ void rendering(Model model) {
 
     glLineWidth(2);
     glColor3f(0.0, 0.0, 0.0);
-    for (int i = 0; i < model.fNum; i++) {
+    for (int i = 0; i < model.fNum; i++) 
+    {
         glBegin(GL_LINES);
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0; j < 3; j++) 
+        {
             int next = (j + 1) % 3;
             glVertex3f(model.vPoint[model.fPoint[i][j]][0], model.vPoint[model.fPoint[i][j]][1], model.vPoint[model.fPoint[i][j]][2]);
             glVertex3f(model.vPoint[model.fPoint[i][next]][0], model.vPoint[model.fPoint[i][next]][1], model.vPoint[model.fPoint[i][next]][2]);
         }
         glEnd();
     }
+}
+
+void drawModel(Model model)
+{
+    glTranslatef(0.0f, -20.0f, -10.0f);
+    glScalef(0.7f, 0.7f, 0.7f);
+	rendering(model);
 }

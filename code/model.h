@@ -13,6 +13,7 @@ extern "C" {
 
     Model ObjLoad(const char* name);
     void rendering(Model model);
+    void drawModel(Model model);
 
 #ifdef __cplusplus
 }

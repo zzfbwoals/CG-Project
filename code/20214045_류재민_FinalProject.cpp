@@ -1,5 +1,4 @@
-﻿// 20214045_류재민_FinalProject
-#pragma warning(disable:4996)
+﻿#pragma warning(disable:4996)
 
 #include "model.h"
 #include <stdio.h>
@@ -9,38 +8,76 @@
 
 Model global_model1;
 
-GLfloat lightPosition[4] = { 1.0, 2.0, 0.0, 1.0 };
-GLfloat ambientLight[4] = { 1.0, 1.0, 1.0, 1.0 };
-GLfloat diffuseLight[4] = { 0.8, 0.8, 0.8, 1.0 };
-GLfloat specular[4] = { 1, 1, 1, 1 };
+GLfloat lightPosition[4] = { 0.0, 0.0, -1.0, 1.0 }; // 앞쪽에서 조명
+GLfloat ambientLight[4] = { 0.2, 0.2, 0.2, 1.0 };   // 약한 주변광
+GLfloat diffuseLight[4] = { 0.4, 0.4, 0.4, 1.0 };   // 약한 산란광
+GLfloat specular[4] = { 0.3, 0.3, 0.3, 1.0 };       // 약한 반사광
+int viewport_pos[16] = {
+    0, 0, 400, 400,     // 1: 옆
+    400, 0, 400, 400,   // 2: 앞
+    0, 400, 400, 400,   // 3: 무작위
+    400, 400, 400, 400  // 4: 위
+};
 
+void drawLine();
 void drawRect();
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glShadeModel(GL_SMOOTH);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(0.0, 0.0, 80.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-    glRotatef(90.0, 1.0, 0.0, 0.0); // 카메리의 위치를 x축을 기준으로 90도 회전
+    glEnable(GL_NORMALIZE);
 
-    drawRect();
+    /*
+    뷰 포트 위치
+    3 4
+    1 2
+    */
 
-    glPushMatrix();
-    // 모델 위치 내리기 (Y축 아래로)
-    glTranslatef(0.0f, -25.0f, -10.0f);  // 모델을 아래로 내림 (스케일 기준 값)
-	glScalef(0.7f, 0.7f, 0.7f); // 모델 크기 조정
-    rendering(global_model1);
-    glPopMatrix();
+	// 각 뷰 포트의 카메라 각도
+    for (int i = 0; i < 4; i++) {
+        glPushMatrix();
+
+        glViewport(viewport_pos[i * 4], viewport_pos[i * 4 + 1], viewport_pos[i * 4 + 2], viewport_pos[i * 4 + 3]);
+        
+        glOrtho(-50, 50, -50, 50, 1.0, 500.0);
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+
+        // 각 뷰포트에 맞는 카메라 시점 설정
+        if (i == 0) { // 앞
+            gluLookAt(0.0, 0.0, 50.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+        }
+        else if (i == 1) { // 무작위
+            gluLookAt(35.0, 25.0, 35.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+        }
+        else if (i == 2) { // 위
+            gluLookAt(0.0, 50.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0);
+        }
+        else if (i == 3) { // 옆
+            gluLookAt(50.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+        }
+
+        // 발판
+        glPushMatrix();
+        drawRect();
+        glPopMatrix();
+
+        // 모델
+        drawModel(global_model1);
+
+        glPopMatrix();
+    }
+
+    // 전체 창에 중앙 십자선 그리기
+    drawLine();
 
     glutSwapBuffers();
-    glutPostRedisplay();
 }
 
 void init() {
     global_model1 = ObjLoad("dino.obj");
 
-    glClearColor(1.0, 1.0, 1.0, 0.0);
+    glClearColor(0.2, 0.2, 0.2, 0.0);
     glEnable(GL_DEPTH_TEST);
 
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
@@ -62,20 +99,37 @@ void reshape(int w, int h) {
 }
 
 void drawRect() {
-    glDisable(GL_LIGHTING);  // 조명 비활성화 (단색 표현)
-    glColor3f(0.0f, 0.1f, 0.0f);  // 밝은 회색 바닥
+    glDisable(GL_LIGHTING);
+    glColor3f(0.0f, 0.5f, 0.0f);
 
-    // 사각형 그리기
+	// 모델을 -20.0f 높이로 배치하여 발판 위에 놓이도록 함
     glBegin(GL_QUADS);
-    glVertex3f(-25.0f, -25.01f, -45.0f);
-    glVertex3f(25.0f, -25.01f, -45.0f);
-    glVertex3f(25.0f, -25.01f, 40.0f);
-    glVertex3f(-25.0f, -25.01f, 40.0f);
+    glVertex3f(-25.0f, -20.01f, -45.0f);
+    glVertex3f(25.0f, -20.01f, -45.0f);
+    glVertex3f(25.0f, -20.01f, 40.0f);
+    glVertex3f(-25.0f, -20.01f, 40.0f);
     glEnd();
 
-    glEnable(GL_LIGHTING);  // 조명 다시 켜기
+    glEnable(GL_LIGHTING);
 }
 
+void drawLine() {
+    glDisable(GL_LIGHTING);
+    glViewport(0, 0, 800, 800);
+    glPushMatrix();
+    gluLookAt(0.0, 50.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+    glColor3f(0.0, 0.0, 0.0);
+    glLineWidth(5.0);
+    glBegin(GL_LINES);
+    glVertex3f(-50.0, 0.0, 0.0);
+    glVertex3f(50.0, 0.0, 0.0);
+    glVertex3f(0.0, 0.0, -50.0);
+    glVertex3f(0.0, 0.0, 50.0);
+    glEnd();
+    glLineWidth(1.0);
+    glPopMatrix();
+    glEnable(GL_LIGHTING);
+}
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);

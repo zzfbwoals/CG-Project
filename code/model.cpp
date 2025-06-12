@@ -1,33 +1,27 @@
 #pragma warning(disable:4996)
-
 #include "model.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <GL/glut.h>
 
-Model global_model1;
+extern int texture;
+extern GLuint textureID[2];
 
-Model ObjLoad(const char* name) 
+Model ObjLoad(const char* name)
 {
     Model model = { 0 };
     char line[256];
     FILE* fp = fopen(name, "r");
-    if (!fp) 
+    if (!fp)
     {
         printf("파일 열기 실패: %s\n", name);
         exit(1);
     }
 
-    // 1차 패스: 개수 세기
-    while (fgets(line, sizeof(line), fp)) 
+    while (fgets(line, sizeof(line), fp))
     {
         if (strncmp(line, "v ", 2) == 0) model.vNum++;
         else if (strncmp(line, "f ", 2) == 0) model.fNum++;
     }
     rewind(fp);
 
-    // 메모리 할당
     model.vPoint = (double**)malloc(sizeof(double*) * model.vNum);
     for (int i = 0; i < model.vNum; i++)
         model.vPoint[i] = (double*)malloc(sizeof(double) * 3);
@@ -37,14 +31,14 @@ Model ObjLoad(const char* name)
         model.fPoint[i] = (int*)malloc(sizeof(int) * 3);
 
     int vCount = 0, fCount = 0;
-    while (fgets(line, sizeof(line), fp)) 
+    while (fgets(line, sizeof(line), fp))
     {
-        if (strncmp(line, "v ", 2) == 0) 
+        if (strncmp(line, "v ", 2) == 0)
         {
             sscanf(line, "v %lf %lf %lf", &model.vPoint[vCount][0], &model.vPoint[vCount][1], &model.vPoint[vCount][2]);
             vCount++;
         }
-        else if (strncmp(line, "f ", 2) == 0) 
+        else if (strncmp(line, "f ", 2) == 0)
         {
             char v1[32], v2[32], v3[32];
             sscanf(line, "f %s %s %s", v1, v2, v3);
@@ -62,42 +56,59 @@ Model ObjLoad(const char* name)
     return model;
 }
 
-void rendering(Model model) 
-{
-    glPointSize(5);
-    glColor3f(0.9, 0.0, 0);
-    glBegin(GL_POINTS);
-    for (int i = 0; i < model.vNum; i++)
-        glVertex3f(model.vPoint[i][0], model.vPoint[i][1], model.vPoint[i][2]);
-    glEnd();
-
-    glColor3f(0.5, 0.5, 0.5);
-    for (int i = 0; i < model.fNum; i++) 
-    {
-        glBegin(GL_TRIANGLES);
-        for (int j = 0; j < 3; j++)
-            glVertex3f(model.vPoint[model.fPoint[i][j]][0], model.vPoint[model.fPoint[i][j]][1], model.vPoint[model.fPoint[i][j]][2]);
-        glEnd();
-    }
-
-    glLineWidth(2);
-    glColor3f(0.0, 0.0, 0.0);
-    for (int i = 0; i < model.fNum; i++) 
-    {
-        glBegin(GL_LINES);
-        for (int j = 0; j < 3; j++) 
-        {
-            int next = (j + 1) % 3;
-            glVertex3f(model.vPoint[model.fPoint[i][j]][0], model.vPoint[model.fPoint[i][j]][1], model.vPoint[model.fPoint[i][j]][2]);
-            glVertex3f(model.vPoint[model.fPoint[i][next]][0], model.vPoint[model.fPoint[i][next]][1], model.vPoint[model.fPoint[i][next]][2]);
-        }
-        glEnd();
+void calcNormal(double* v0, double* v1, double* v2, double* normal) {
+    double u[3] = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] };
+    double v[3] = { v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2] };
+    normal[0] = u[1] * v[2] - u[2] * v[1];
+    normal[1] = u[2] * v[0] - u[0] * v[2];
+    normal[2] = u[0] * v[1] - u[1] * v[0];
+    double len = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+    if (len > 0) {
+        normal[0] /= len; normal[1] /= len; normal[2] /= len;
     }
 }
 
-void drawModel(Model model)
+void rendering(Model model)
 {
+    // 텍스처가 활성화된 경우에만 텍스처를 사용 - 함수 시작 시 한 번만 활성화
+    if (texture) {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, textureID[1]);
+    }
+    else {
+        glDisable(GL_TEXTURE_2D);
+    }
+
     glTranslatef(0.0f, -20.0f, -10.0f);
     glScalef(0.7f, 0.7f, 0.7f);
-	rendering(model);
+
+    for (int i = 0; i < model.fNum; i++) {
+        double* v0 = model.vPoint[model.fPoint[i][0]];
+        double* v1 = model.vPoint[model.fPoint[i][1]];
+        double* v2 = model.vPoint[model.fPoint[i][2]];
+        double normal[3];
+        calcNormal(v0, v1, v2, normal);
+
+        glBegin(GL_TRIANGLES);
+        glNormal3dv(normal);
+
+        for (int j = 0; j < 3; j++) {
+            // 각 정점마다 다른 텍스처 좌표 사용 (삼각형의 위치에 따라 다름)
+            if (texture) {
+                // 공룡의 위치에 따라 텍스처 좌표 계산
+                float u = (model.vPoint[model.fPoint[i][j]][0] + 20.0f) / 40.0f;
+                float v = (model.vPoint[model.fPoint[i][j]][2] + 20.0f) / 40.0f;
+                glTexCoord2f(u, v);
+            }
+
+            glVertex3f(model.vPoint[model.fPoint[i][j]][0], model.vPoint[model.fPoint[i][j]][1], model.vPoint[model.fPoint[i][j]][2]);
+        }
+
+        glEnd();
+    }
+
+    // 텍스처 상태 복원
+    if (texture) {
+        glDisable(GL_TEXTURE_2D);
+    }
 }

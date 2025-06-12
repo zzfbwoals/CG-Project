@@ -1,17 +1,13 @@
 #pragma warning(disable:4996)
-
 #include "camera.h"
-#include <math.h>
-#include <GL/glut.h>
 
+// gluLookAt 함수에 필요한 카메라 구조체
 Camera cameras[4] = {
     {0.0, 0.0, 50.0, 0.0, 1.0, 0.0, 90.0, 0.0, 50.0},    // 앞
     {35.0, 25.0, 35.0, 0.0, 1.0, 0.0, 65.0, 45.0, 50.0}, // 무작위
     {0.0, 50.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 50.0},    // 위
     {50.0, 0.0, 0.0, 0.0, 1.0, 0.0, 90.0, 90.0, 50.0}    // 옆
 };
-
-int selected_viewport = -1;
 
 void eyePosition(int index) {
     Camera* cam = &cameras[index];

@@ -1,5 +1,6 @@
 ﻿#pragma warning(disable:4996)
 #include <time.h>
+#include <iostream>
 #include "model.h"
 #include "camera.h"
 #include "lodepng.h"
@@ -9,13 +10,15 @@ Model model;
 
 // 조명 설정
 GLfloat lightPosition[4] = { 20.0, 20.0, 30.0, 1.0 };
-GLfloat ambientLight[4] = { 1.0, 1.0, 1.0, 1.0 };
-GLfloat diffuseLight[4] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat diffuse[4] = { 0.5, 0.5, 0.5, 1.0 };
 GLfloat specular[4] = { 1.0, 1.0, 1.0, 1.0 };
 
 // 색상
-GLfloat floorColor[3] = { 0.0, 0.2, 0.0 }; // 바닥 기본 색상
-GLfloat modelColor[3] = { 0.4, 0.29, 0.0 }; // 모델 기본 색상
+GLfloat floorColor[3] = { 0.7, 0.7, 0.7 }; // 바닥 기본 색상
+GLfloat modelColor[3] = { 0.7, 0.7, 0.7 }; // 모델 기본 색상
+
+// 텍스처
+GLuint textureID[2];
 
 // 상태
 int light = 1; // 조명 상태 (1: 켜짐, 0: 꺼짐)
@@ -33,45 +36,6 @@ int viewportPos[16] = {
 // 그리기
 void drawLine();
 void drawRect();
-
-// 메뉴 콜백 함수
-void menuCallback(int value) {
-    switch (value) {
-	case 0: // 바닥 색상 변경
-        floorColor[0] = (float)rand() / RAND_MAX; floorColor[1] = (float)rand() / RAND_MAX; floorColor[2] = (float)rand() / RAND_MAX;    
-        printf("바닥 색상 변경: RGB(%.2f, %.2f, %.2f)\n", floorColor[0], floorColor[1], floorColor[2]);  
-        break;
-	case 1: // 모델 색상 변경
-        modelColor[0] = (float)rand() / RAND_MAX; modelColor[1] = (float)rand() / RAND_MAX; modelColor[2] = (float)rand() / RAND_MAX;
-        printf("모델 색상 변경: RGB(%.2f, %.2f, %.2f)\n", modelColor[0], modelColor[1], modelColor[2]);
-        break;
-	case 2: // 조명 토글
-        light = !light;
-        if (light) {
-            glEnable(GL_LIGHT0);
-            printf("조명 On\n");
-        }
-        else {
-            glDisable(GL_LIGHT0);
-            printf("조명 Off\n");
-        }
-        break;
-	case 3: // 조명 색상 변경
-        ambientLight[0] = (float)rand() / RAND_MAX; ambientLight[1] = (float)rand() / RAND_MAX; ambientLight[2] = (float)rand() / RAND_MAX; // ambient
-        glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
-        diffuseLight[0] = (float)rand() / RAND_MAX; diffuseLight[1] = (float)rand() / RAND_MAX; diffuseLight[2] = (float)rand() / RAND_MAX; // diffuse
-        glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
-        specular[0] = (float)rand() / RAND_MAX; specular[1] = (float)rand() / RAND_MAX; specular[2] = (float)rand() / RAND_MAX; // specular
-        glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-        printf("조명 색상 변경\n");
-        break;
-	case 4: // 텍스처 토글
-        // 텍스처 기능은 제외 (빈 동작)
-        printf("Texture toggle not implemented\n");
-        break;
-    }
-    glutPostRedisplay();
-}
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -99,8 +63,15 @@ void display() {
         glPopMatrix();
 
 		// 모델 그리기
-        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, modelColor);
-        drawModel(model);
+		if (!light) { 
+            glDisable(GL_LIGHTING);
+            glColor3f(modelColor[0], modelColor[1], modelColor[2]);
+        }
+		else { 
+            glEnable(GL_LIGHTING);
+            glMaterialfv(GL_FRONT, GL_DIFFUSE, modelColor);
+        }
+        rendering(model);
 
         glPopMatrix();
     }
@@ -108,45 +79,6 @@ void display() {
     drawLine();
 
     glutSwapBuffers();
-}
-
-void init() {
-    model = ObjLoad("dino.obj");
-
-    glClearColor(0.2, 0.2, 0.2, 0.0);
-    glEnable(GL_DEPTH_TEST);
-
-    glLightfv(GL_LIGHT0, GL_AMBIENT, ambientLight);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-
-    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.001);
-    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0001);
-
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-
-    // 랜덤 시드 초기화
-    srand(time(NULL));
-
-    // 팝업 메뉴 생성
-    glutCreateMenu(menuCallback);
-    glutAddMenuEntry("바닥 색상 변경", 0);
-    glutAddMenuEntry("모델 색상 변경", 1);
-    glutAddMenuEntry("조명 On/Off", 2);
-    glutAddMenuEntry("조명 색상 변경", 3);
-    glutAddMenuEntry("텍스처 On/Off", 4);
-    glutAttachMenu(GLUT_RIGHT_BUTTON);
-}
-
-void reshape(int w, int h) {
-    glViewport(0, 0, w, h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(-50, 50, -50, 50, 1.0, 500.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
 }
 
 void specialKeys(int key, int x, int y) {
@@ -192,17 +124,32 @@ void keyboard(unsigned char key, int x, int y) {
 
 void drawRect() {
     glDisable(GL_LIGHTING);
-    glColor3f(floorColor[0], floorColor[1], floorColor[2]); // 동적 바닥 색상
+    glColor3f(floorColor[0], floorColor[1], floorColor[2]);
+
+	// 텍스처가 활성화된 경우에만 텍스처를 사용
+    if (texture) {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, textureID[0]);
+    }
+    else {
+        glDisable(GL_TEXTURE_2D);
+    }
 
     glBegin(GL_QUADS);
+    if (texture) glTexCoord2f(0.0f, 0.0f);
     glVertex3f(-25.0f, -21.0f, -45.0f);
+    if (texture) glTexCoord2f(1.0f, 0.0f);
     glVertex3f(25.0f, -21.0f, -45.0f);
+    if (texture) glTexCoord2f(1.0f, 1.0f);
     glVertex3f(25.0f, -21.0f, 40.0f);
+    if (texture) glTexCoord2f(0.0f, 1.0f);
     glVertex3f(-25.0f, -21.0f, 40.0f);
     glEnd();
 
+    glDisable(GL_TEXTURE_2D);
     glEnable(GL_LIGHTING);
 }
+
 
 void drawLine() {
     glDisable(GL_LIGHTING);
@@ -220,6 +167,107 @@ void drawLine() {
     glLineWidth(1.0);
     glPopMatrix();
     glEnable(GL_LIGHTING);
+}
+
+// 메뉴 콜백 함수
+void menuCallback(int value) {
+    switch (value) {
+    case 0: // 바닥 색상 변경
+        floorColor[0] = (float)rand() / RAND_MAX; floorColor[1] = (float)rand() / RAND_MAX; floorColor[2] = (float)rand() / RAND_MAX;
+        printf("바닥 색상 변경: RGB(%.2f, %.2f, %.2f)\n", floorColor[0], floorColor[1], floorColor[2]);
+        break;
+    case 1: // 모델 색상 변경
+        modelColor[0] = (float)rand() / RAND_MAX; modelColor[1] = (float)rand() / RAND_MAX; modelColor[2] = (float)rand() / RAND_MAX;
+        printf("모델 색상 변경: RGB(%.2f, %.2f, %.2f)\n", modelColor[0], modelColor[1], modelColor[2]);
+        break;
+    case 2: // 조명 토글
+        light = !light;
+        if (light) {
+            glEnable(GL_LIGHT0);
+            printf("조명 On\n");
+        }
+        else {
+            glDisable(GL_LIGHT0);
+            printf("조명 Off\n");
+        }
+        break;
+    case 3: // 조명 색상 변경
+        diffuse[0] = (float)rand() / RAND_MAX; diffuse[1] = (float)rand() / RAND_MAX; diffuse[2] = (float)rand() / RAND_MAX; // diffuse
+        specular[0] = (float)rand() / RAND_MAX; specular[1] = (float)rand() / RAND_MAX; specular[2] = (float)rand() / RAND_MAX; // specular
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+        glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+        printf("조명 색상 변경\n");
+        break;
+    case 4: // 텍스처 토글
+        texture = !texture;
+        if (texture) {
+            printf("텍스처 On\n");
+        }
+        else {
+            printf("텍스처 Off\n");
+        }
+        break;
+    }
+    glutPostRedisplay();
+}
+
+void initTexture(GLuint* texture, const char* path)
+{
+    std::vector<unsigned char> image;
+    unsigned width, height;
+    unsigned error = lodepng::decode(image, width, height, path);
+    if (!error)
+        std::cout << "error " << error << ": " << lodepng_error_text(error) << std::endl;
+
+    glGenTextures(1, texture);
+    glBindTexture(GL_TEXTURE_2D, *texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, &image[0]);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+    glEnable(GL_TEXTURE_2D);
+}
+
+void init() {
+    model = ObjLoad("dino.obj");
+
+    glClearColor(0.2, 0.2, 0.2, 0.0);
+    glEnable(GL_DEPTH_TEST);
+
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+
+    // 감쇠율
+    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.001);
+    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0001);
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    // 랜덤 시드 초기화
+    srand(time(NULL));
+
+    // 팝업 메뉴 생성
+    glutCreateMenu(menuCallback);
+    glutAddMenuEntry("바닥 색상 변경", 0);
+    glutAddMenuEntry("모델 색상 변경", 1);
+    glutAddMenuEntry("조명 On/Off", 2);
+    glutAddMenuEntry("조명 색상 변경", 3);
+    glutAddMenuEntry("텍스처 On/Off", 4);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    // 텍스처 이미지 불러오기
+    initTexture(&textureID[0], "ground.png");
+}
+
+void reshape(int w, int h) {
+    glViewport(0, 0, w, h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-50, 50, -50, 50, 1.0, 500.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 }
 
 int main(int argc, char** argv) {

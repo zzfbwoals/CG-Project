@@ -53,42 +53,33 @@ Model ObjLoad(const char* name)
     return model;
 }
 
-void rendering(Model model)
-{
-    glPointSize(5);
-    glColor3f(modelColor[0], modelColor[1], modelColor[2]);
-    glBegin(GL_POINTS);
-    for (int i = 0; i < model.vNum; i++)
-        glVertex3f(model.vPoint[i][0], model.vPoint[i][1], model.vPoint[i][2]);
-    glEnd();
-
-    glColor3f(modelColor[0], modelColor[1], modelColor[2]);
-    for (int i = 0; i < model.fNum; i++)
-    {
-        glBegin(GL_TRIANGLES);
-        for (int j = 0; j < 3; j++)
-            glVertex3f(model.vPoint[model.fPoint[i][j]][0], model.vPoint[model.fPoint[i][j]][1], model.vPoint[model.fPoint[i][j]][2]);
-        glEnd();
-    }
-
-    glLineWidth(2);
-    glColor3f(1,1,1);
-    for (int i = 0; i < model.fNum; i++)
-    {
-        glBegin(GL_LINES);
-        for (int j = 0; j < 3; j++)
-        {
-            int next = (j + 1) % 3;
-            glVertex3f(model.vPoint[model.fPoint[i][j]][0], model.vPoint[model.fPoint[i][j]][1], model.vPoint[model.fPoint[i][j]][2]);
-            glVertex3f(model.vPoint[model.fPoint[i][next]][0], model.vPoint[model.fPoint[i][next]][1], model.vPoint[model.fPoint[i][next]][2]);
-        }
-        glEnd();
+void calcNormal(double* v0, double* v1, double* v2, double* normal) {
+    double u[3] = { v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2] };
+    double v[3] = { v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2] };
+    normal[0] = u[1] * v[2] - u[2] * v[1];
+    normal[1] = u[2] * v[0] - u[0] * v[2];
+    normal[2] = u[0] * v[1] - u[1] * v[0];
+    double len = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+    if (len > 0) {
+        normal[0] /= len; normal[1] /= len; normal[2] /= len;
     }
 }
 
-void drawModel(Model model)
+void rendering(Model model)
 {
     glTranslatef(0.0f, -20.0f, -10.0f);
     glScalef(0.7f, 0.7f, 0.7f);
-    rendering(model);
+    for (int i = 0; i < model.fNum; i++) {
+        double* v0 = model.vPoint[model.fPoint[i][0]];
+        double* v1 = model.vPoint[model.fPoint[i][1]];
+        double* v2 = model.vPoint[model.fPoint[i][2]];
+        double normal[3];
+        calcNormal(v0, v1, v2, normal);
+        glBegin(GL_TRIANGLES);
+        glNormal3dv(normal);
+        for (int j = 0; j < 3; j++)
+            glVertex3f(model.vPoint[model.fPoint[i][j]][0], model.vPoint[model.fPoint[i][j]][1], model.vPoint[model.fPoint[i][j]][2]);
+        glEnd();
+    }
+
 }

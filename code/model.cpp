@@ -1,6 +1,9 @@
 #pragma warning(disable:4996)
 #include "model.h"
 
+extern int texture;
+extern GLuint textureID[2];
+
 Model ObjLoad(const char* name)
 {
     Model model = { 0 };
@@ -67,19 +70,45 @@ void calcNormal(double* v0, double* v1, double* v2, double* normal) {
 
 void rendering(Model model)
 {
+    // 텍스처가 활성화된 경우에만 텍스처를 사용 - 함수 시작 시 한 번만 활성화
+    if (texture) {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, textureID[1]);
+    }
+    else {
+        glDisable(GL_TEXTURE_2D);
+    }
+
     glTranslatef(0.0f, -20.0f, -10.0f);
     glScalef(0.7f, 0.7f, 0.7f);
+
     for (int i = 0; i < model.fNum; i++) {
         double* v0 = model.vPoint[model.fPoint[i][0]];
         double* v1 = model.vPoint[model.fPoint[i][1]];
         double* v2 = model.vPoint[model.fPoint[i][2]];
         double normal[3];
         calcNormal(v0, v1, v2, normal);
+
         glBegin(GL_TRIANGLES);
         glNormal3dv(normal);
-        for (int j = 0; j < 3; j++)
+
+        for (int j = 0; j < 3; j++) {
+            // 각 정점마다 다른 텍스처 좌표 사용 (삼각형의 위치에 따라 다름)
+            if (texture) {
+                // 공룡의 위치에 따라 텍스처 좌표 계산
+                float u = (model.vPoint[model.fPoint[i][j]][0] + 20.0f) / 40.0f;
+                float v = (model.vPoint[model.fPoint[i][j]][2] + 20.0f) / 40.0f;
+                glTexCoord2f(u, v);
+            }
+
             glVertex3f(model.vPoint[model.fPoint[i][j]][0], model.vPoint[model.fPoint[i][j]][1], model.vPoint[model.fPoint[i][j]][2]);
+        }
+
         glEnd();
     }
 
+    // 텍스처 상태 복원
+    if (texture) {
+        glDisable(GL_TEXTURE_2D);
+    }
 }

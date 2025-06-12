@@ -150,7 +150,6 @@ void drawRect() {
     glEnable(GL_LIGHTING);
 }
 
-
 void drawLine() {
     glDisable(GL_LIGHTING);
     glViewport(0, 0, 800, 800);
@@ -258,7 +257,8 @@ void init() {
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 
     // 텍스처 이미지 불러오기
-    initTexture(&textureID[0], "ground.png");
+    initTexture(&textureID[0], "ground.png"); // 바닥 텍스처
+    initTexture(&textureID[1], "dino.png");   // 공룡 텍스처 
 }
 
 void reshape(int w, int h) {

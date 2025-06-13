@@ -6,31 +6,35 @@
 #include "camera.h"
 #include "lodepng.h"
 
+/*****************
+     1번 문제
+*****************/
+
+// 기본 함수
+void init();
+void display();
+void reshape(int w, int h);
+
 // 모델
 Model dino;
 Model eye;
 Model eyeground;
 Model teeth;
 Model horn;
-
-// 조명 설정
-GLfloat lightPosition[4] = { 20.0, 20.0, 30.0, 1.0 };
-GLfloat diffuse[4] = { 0.5, 0.5, 0.5, 1.0 };
-GLfloat specular[4] = { 1.0, 1.0, 1.0, 1.0 };
+void free();
 
 // 색상
 GLfloat floorColor[3] = { 0.7, 0.7, 0.7 }; // 바닥 기본 색상
 GLfloat modelColor[3] = { 1.0, 1.0, 1.0 }; // 모델 기본 색상
 
-// 텍스처
-GLuint textureID[6];
+// 사각형 바닥 그리기
+void drawRect(); 
 
-// 상태
-int light = 1; // 조명 상태 (1: 켜짐, 0: 꺼짐)
-int viewport = -1; // 뷰포트 선택 상태 (-1은 선택되지 않음)
-int texture = 1; // 텍스처 상태 (0: 사용 안 함, 1: 사용)
+/*****************
+     2번 문제
+*****************/
 
-// 뷰포트 위치 배열
+// 뷰포트
 int viewportPos[16] = {
     0, 0, 400, 400,     // 0: 앞
     400, 0, 400, 400,   // 1: 무작위
@@ -38,9 +42,97 @@ int viewportPos[16] = {
     400, 400, 400, 400  // 3: 옆
 };
 
-// 그리기
-void drawLine();
-void drawRect();
+// 중앙 십자선 그리기 (뷰포트 구분용)
+void drawLine(); 
+
+/*****************
+     3번 문제
+*****************/
+
+// 뷰포트 선택 상태 (-1은 선택되지 않음)
+int viewport = -1;
+
+// 키 입력
+void specialKeys(int key, int x, int y);
+void keyboard(unsigned char key, int x, int y);
+
+/*****************
+     4번 문제
+*****************/
+
+// 메뉴
+int light = 1; // 조명 상태 (1: 켜짐, 0: 꺼짐)
+int texture = 1; // 텍스처 상태 (0: 사용 안 함, 1: 사용)
+void menuCallback(int value);
+
+// 조명 설정
+GLfloat lightPosition[4] = { 20.0, 20.0, 30.0, 1.0 };
+GLfloat diffuse[4] = { 0.5, 0.5, 0.5, 1.0 };
+GLfloat specular[4] = { 1.0, 1.0, 1.0, 1.0 };
+
+// 텍스처
+GLuint textureID[6];
+void initTexture(GLuint* texture, const char* path);
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+    glutInitWindowSize(800, 800);
+    glutInitWindowPosition(100, 100);
+    glutCreateWindow("OBJ VIEWER");
+
+    init();
+
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+    glutSpecialFunc(specialKeys);
+    glutKeyboardFunc(keyboard);
+    glutMainLoop();
+    free();
+    return 0;
+}
+
+void init() {
+    dino = ObjLoad("dino.obj");
+    eye = ObjLoad("eye.obj");
+    eyeground = ObjLoad("eyeground.obj");
+    teeth = ObjLoad("teeth.obj");
+    horn = ObjLoad("horn.obj");
+
+    glClearColor(0.2, 0.2, 0.2, 0.0);
+    glEnable(GL_DEPTH_TEST);
+
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+
+    // 감쇠율
+    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.001);
+    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0001);
+
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+
+    // 랜덤 시드 초기화
+    srand(time(NULL));
+
+    // 팝업 메뉴 생성
+    glutCreateMenu(menuCallback);
+    glutAddMenuEntry("바닥 색상 변경", 0);
+    glutAddMenuEntry("모델 색상 변경", 1);
+    glutAddMenuEntry("조명 On/Off", 2);
+    glutAddMenuEntry("조명 색상 변경", 3);
+    glutAddMenuEntry("텍스처 On/Off", 4);
+    glutAttachMenu(GLUT_RIGHT_BUTTON);
+
+    // 텍스처 이미지 불러오기
+    initTexture(&textureID[0], "ground.png"); // 바닥 텍스처
+    initTexture(&textureID[1], "dino.png");   // 공룡 텍스처 
+    initTexture(&textureID[2], "eye.png");    // 눈 텍스처
+    initTexture(&textureID[3], "eyeground.png"); // 눈 바닥 텍스처
+    initTexture(&textureID[4], "teeth.png"); // 이빨 텍스처
+    initTexture(&textureID[5], "horn.png"); // 뿔 텍스처
+}
 
 void display() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -70,10 +162,10 @@ void display() {
         // 모델 그리기
         glTranslatef(0.0f, -20.0f, -10.0f);
         glScalef(0.7f, 0.7f, 0.7f);
-		rendering(dino, 1);
-		rendering(eye, 2);
+        rendering(dino, 1);
+        rendering(eye, 2);
         rendering(eyeground, 3);
-		rendering(teeth, 4);
+        rendering(teeth, 4);
         rendering(horn, 5);
 
         glPopMatrix();
@@ -84,45 +176,37 @@ void display() {
     glutSwapBuffers();
 }
 
-void specialKeys(int key, int x, int y) {
-    if (viewport == -1) return;
-
-    Camera* c = &cameras[viewport];
-    if (key == GLUT_KEY_UP) {
-        c->theta -= 5.0;
-    }
-    if (key == GLUT_KEY_DOWN) {
-        c->theta += 5.0;
-    }
-    if (key == GLUT_KEY_LEFT) {
-        c->phi -= 5.0;
-    }
-    if (key == GLUT_KEY_RIGHT) {
-        c->phi += 5.0;
-    }
-
-    if (c->theta > 360.0) c->theta = fmod((double)c->theta, 360.0);
-    if (c->phi > 360.0) c->phi = fmod((double)c->phi, 360.0);
-
-    eyePosition(viewport);
+void reshape(int w, int h) {
+    glViewport(0, 0, w, h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(-50, 50, -50, 50, 1.0, 500.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 }
 
-void keyboard(unsigned char key, int x, int y) {
-    switch (key) {
-    case '1':
-        viewport = 2; // 위
-        break;
-    case '2':
-        viewport = 3; // 옆
-        break;
-    case '3':
-        viewport = 0; // 앞
-        break;
-    case '4':
-        viewport = 1; // 무작위
-        break;
-    }
-    glutPostRedisplay();
+void free()
+{
+    for (int i = 0; i < dino.vNum; i++) free(dino.vPoint[i]);
+    free(dino.vPoint);
+    for (int i = 0; i < dino.fNum; i++) free(dino.fPoint[i]);
+    free(dino.fPoint);
+    for (int i = 0; i < eye.vNum; i++)free(eye.vPoint[i]);
+    free(eye.vPoint);
+    for (int i = 0; i < eye.fNum; i++)free(eye.fPoint[i]);
+    free(eye.fPoint);
+    for (int i = 0; i < eyeground.vNum; i++)free(eyeground.vPoint[i]);
+    free(eyeground.vPoint);
+    for (int i = 0; i < eyeground.fNum; i++)free(eyeground.fPoint[i]);
+    free(eyeground.fPoint);
+    for (int i = 0; i < teeth.vNum; i++)free(teeth.vPoint[i]);
+    free(teeth.vPoint);
+    for (int i = 0; i < teeth.fNum; i++)free(teeth.fPoint[i]);
+    free(teeth.fPoint);
+    for (int i = 0; i < horn.vNum; i++)free(horn.vPoint[i]);
+    free(horn.vPoint);
+    for (int i = 0; i < horn.fNum; i++)free(horn.fPoint[i]);
+    free(horn.fPoint);
 }
 
 void drawRect() {
@@ -171,7 +255,47 @@ void drawLine() {
     glEnable(GL_LIGHTING);
 }
 
-// 메뉴 콜백 함수
+void specialKeys(int key, int x, int y) {
+    if (viewport == -1) return;
+
+    Camera* c = &cameras[viewport];
+    if (key == GLUT_KEY_UP) {
+        c->theta -= 5.0;
+    }
+    if (key == GLUT_KEY_DOWN) {
+        c->theta += 5.0;
+    }
+    if (key == GLUT_KEY_LEFT) {
+        c->phi -= 5.0;
+    }
+    if (key == GLUT_KEY_RIGHT) {
+        c->phi += 5.0;
+    }
+
+    if (c->theta > 360.0) c->theta = fmod((double)c->theta, 360.0);
+    if (c->phi > 360.0) c->phi = fmod((double)c->phi, 360.0);
+
+    eyePosition(viewport);
+}
+
+void keyboard(unsigned char key, int x, int y) {
+    switch (key) {
+    case '1':
+        viewport = 2; // 위
+        break;
+    case '2':
+        viewport = 3; // 옆
+        break;
+    case '3':
+        viewport = 0; // 앞
+        break;
+    case '4':
+        viewport = 1; // 무작위
+        break;
+    }
+    glutPostRedisplay();
+}
+
 void menuCallback(int value) {
     switch (value) {
     case 0: // 바닥 색상 변경
@@ -228,97 +352,4 @@ void initTexture(GLuint* texture, const char* path)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glEnable(GL_TEXTURE_2D);
-}
-
-void init() {
-    dino = ObjLoad("dino.obj");
-	eye = ObjLoad("eye.obj");
-	eyeground = ObjLoad("eyeground.obj");
-	teeth = ObjLoad("teeth.obj");
-	horn = ObjLoad("horn.obj");
-
-    glClearColor(0.2, 0.2, 0.2, 0.0);
-    glEnable(GL_DEPTH_TEST);
-
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
-    glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-
-    // 감쇠율
-    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.001);
-    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.0001);
-
-    glEnable(GL_LIGHTING);
-    glEnable(GL_LIGHT0);
-
-    // 랜덤 시드 초기화
-    srand(time(NULL));
-
-    // 팝업 메뉴 생성
-    glutCreateMenu(menuCallback);
-    glutAddMenuEntry("바닥 색상 변경", 0);
-    glutAddMenuEntry("모델 색상 변경", 1);
-    glutAddMenuEntry("조명 On/Off", 2);
-    glutAddMenuEntry("조명 색상 변경", 3);
-    glutAddMenuEntry("텍스처 On/Off", 4);
-    glutAttachMenu(GLUT_RIGHT_BUTTON);
-
-    // 텍스처 이미지 불러오기
-    initTexture(&textureID[0], "ground.png"); // 바닥 텍스처
-    initTexture(&textureID[1], "dino.png");   // 공룡 텍스처 
-	initTexture(&textureID[2], "eye.png");    // 눈 텍스처
-	initTexture(&textureID[3], "eyeground.png"); // 눈 바닥 텍스처
-	initTexture(&textureID[4], "teeth.png"); // 이빨 텍스처
-	initTexture(&textureID[5], "horn.png"); // 뿔 텍스처
-}
-
-void reshape(int w, int h) {
-    glViewport(0, 0, w, h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(-50, 50, -50, 50, 1.0, 500.0);
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-}
-
-void free()
-{
-    for (int i = 0; i < dino.vNum; i++) free(dino.vPoint[i]);
-    free(dino.vPoint);
-    for (int i = 0; i < dino.fNum; i++) free(dino.fPoint[i]);
-    free(dino.fPoint);
-	for (int i = 0; i < eye.vNum; i++)free(eye.vPoint[i]);
-	free(eye.vPoint);
-	for (int i = 0; i < eye.fNum; i++)free(eye.fPoint[i]);
-	free(eye.fPoint);
-	for (int i = 0; i < eyeground.vNum; i++)free(eyeground.vPoint[i]);
-	free(eyeground.vPoint);
-	for (int i = 0; i < eyeground.fNum; i++)free(eyeground.fPoint[i]);
-	free(eyeground.fPoint);
-	for (int i = 0; i < teeth.vNum; i++)free(teeth.vPoint[i]);
-	free(teeth.vPoint);
-	for (int i = 0; i < teeth.fNum; i++)free(teeth.fPoint[i]);
-	free(teeth.fPoint);
-	for (int i = 0; i < horn.vNum; i++)free(horn.vPoint[i]);
-	free(horn.vPoint);
-	for (int i = 0; i < horn.fNum; i++)free(horn.fPoint[i]);
-	free(horn.fPoint);
-}
-
-int main(int argc, char** argv) {
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
-    glutInitWindowSize(800, 800);
-    glutInitWindowPosition(100, 100);
-    glutCreateWindow("OBJ VIEWER");
-
-    init();
-
-    glutDisplayFunc(display);
-    glutReshapeFunc(reshape);
-    glutSpecialFunc(specialKeys);
-    glutKeyboardFunc(keyboard);
-    glutMainLoop();
-    free();
-    return 0;
 }

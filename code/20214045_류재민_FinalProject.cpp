@@ -76,6 +76,7 @@ void menuCallback(int value);
 GLfloat lightPosition[4] = { 20.0, 20.0, 30.0, 1.0 };
 GLfloat diffuse[4] = { 0.5, 0.5, 0.5, 1.0 };
 GLfloat specular[4] = { 1.0, 1.0, 1.0, 1.0 };
+float lightMoveSpeed = 1.0f; // 조명 이동 속도
 
 // 텍스처
 GLuint textureID[12];
@@ -456,21 +457,22 @@ void specialKeys(int key, int x, int y) {
 }
 
 void keyboard(unsigned char key, int x, int y) {
-    // 조명 이동 속도
-    float lightMoveSpeed = 1.0f; // 한 번에 1.0 단위로 이동
-
     switch (key) {
     case '1':
         viewport = 2; // 위
+        printf("뷰포트 선택: 위\n");
         break;
     case '2':
         viewport = 3; // 옆
+        printf("뷰포트 선택: 옆\n");
         break;
     case '3':
         viewport = 0; // 앞
+        printf("뷰포트 선택: 앞\n");
         break;
     case '4':
         viewport = 1; // 무작위
+        printf("뷰포트 선택: 무작위\n");
         break;
     case 'x':
         lightPosition[0] += lightMoveSpeed;
@@ -500,6 +502,53 @@ void keyboard(unsigned char key, int x, int y) {
     case 'G':
         grid = !grid; // 그리드 토글
         printf("그리드 %s\n", grid ? "On" : "Off");
+        break;
+    case 'f':
+    case 'F':
+        if (viewport != -1) {
+            initCamera(0); // 앞쪽 뷰 설정
+            cameras[viewport] = cameras[0]; // 현재 뷰포트에 복사
+            eyePosition(viewport);
+            printf("카메라: 앞쪽 뷰 (뷰포트 %d)\n", viewport);
+        }
+        break;
+    case 'b':
+    case 'B':
+        if (viewport != -1) {
+            initCamera(0); // 앞쪽 뷰 설정
+            cameras[viewport] = cameras[0];
+            cameras[viewport].phi += 180.0f; // 뒤쪽으로 180도 회전
+            if (cameras[viewport].phi > 360.0) cameras[viewport].phi = fmod((double)cameras[viewport].phi, 360.0);
+            eyePosition(viewport);
+            printf("카메라: 뒤쪽 뷰 (뷰포트 %d)\n", viewport);
+        }
+        break;
+    case 'l':
+    case 'L':
+        if (viewport != -1) {
+            initCamera(3); // 옆쪽 뷰 설정
+            cameras[viewport] = cameras[3];
+            eyePosition(viewport);
+            printf("카메라: 옆쪽 뷰 (뷰포트 %d)\n", viewport);
+        }
+        break;
+    case 'u':
+    case 'U':
+        if (viewport != -1) {
+            initCamera(2); // 위쪽 뷰 설정
+            cameras[viewport] = cameras[2];
+            eyePosition(viewport);
+            printf("카메라: 위쪽 뷰 (뷰포트 %d)\n", viewport);
+        }
+        break;
+    case 'p':
+    case 'P':
+        if (viewport != -1) {
+            initCamera(1); // 무작위 뷰 설정
+            cameras[viewport] = cameras[1];
+            eyePosition(viewport);
+            printf("카메라: 무작위 뷰 (뷰포트 %d)\n", viewport);
+        }
         break;
     }
     glutPostRedisplay();

@@ -35,7 +35,7 @@ GLfloat floorColor[3] = { 0.7, 0.7, 0.7 }; // 바닥 기본 색상
 GLfloat modelColor[3] = { 1.0, 1.0, 1.0 }; // 모델 기본 색상
 
 // 사각형 바닥 그리기
-void drawRect(); 
+void drawRect();
 
 /*****************
      2번 문제
@@ -50,7 +50,7 @@ int viewportPos[16] = {
 };
 
 // 중앙 십자선 그리기 (뷰포트 구분용)
-void drawLine(); 
+void drawLine();
 
 /*****************
      3번 문제
@@ -93,6 +93,10 @@ int animDirection = 1; // 애니메이션 방향 (1: 증가, -1: 감소)
 int animation = 0; // 애니메이션 상태 (1: 켜짐, 0: 꺼짐)
 void animate(int value);
 
+// 그리드
+int grid = 0; // 그리드 상태 (1: 켜짐, 0: 꺼짐)
+void drawGrid();
+
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
@@ -113,7 +117,7 @@ int main(int argc, char** argv) {
 }
 
 void init() {
-	// 모델 불러오기
+    // 모델 불러오기
     dino = ObjLoad("dino.obj");
     eye = ObjLoad("eye.obj");
     eyeground = ObjLoad("eyeground.obj");
@@ -121,10 +125,10 @@ void init() {
     horn = ObjLoad("horn.obj");
     rleg = ObjLoad("rleg.obj");
     lleg = ObjLoad("lleg.obj");
-	legCover = ObjLoad("legCover.obj");
-	rarm = ObjLoad("rarm.obj");
-	larm = ObjLoad("larm.obj");
-	armCover = ObjLoad("armCover.obj");
+    legCover = ObjLoad("legCover.obj");
+    rarm = ObjLoad("rarm.obj");
+    larm = ObjLoad("larm.obj");
+    armCover = ObjLoad("armCover.obj");
 
     glClearColor(0.2, 0.2, 0.2, 0.0);
     glEnable(GL_DEPTH_TEST);
@@ -162,11 +166,10 @@ void init() {
     initTexture(&textureID[5], "horn.png"); // 뿔 텍스처
     initTexture(&textureID[6], "dino.png"); // 오른다리 텍스처
     initTexture(&textureID[7], "dino.png"); // 왼다리 텍스처
-	initTexture(&textureID[8], "dino.png"); // 다리 커버 텍스처
-	initTexture(&textureID[9], "dino.png"); // 오른팔 텍스처
-	initTexture(&textureID[10], "dino.png"); // 왼팔 텍스처
-	initTexture(&textureID[11], "dino.png"); // 팔 커버 텍스처
-
+    initTexture(&textureID[8], "dino.png"); // 다리 커버 텍스처
+    initTexture(&textureID[9], "dino.png"); // 오른팔 텍스처
+    initTexture(&textureID[10], "dino.png"); // 왼팔 텍스처
+    initTexture(&textureID[11], "dino.png"); // 팔 커버 텍스처
 }
 
 void display() {
@@ -190,8 +193,7 @@ void display() {
             cameras[i].upX, cameras[i].upY, cameras[i].upZ);
 
         // 조명 그리기
-        if (light)
-        {
+        if (light) {
             glDisable(GL_LIGHTING);
             glPushMatrix();
             glColor3f(0.0, 0.0, 0.0);
@@ -206,7 +208,14 @@ void display() {
         drawRect();
         glPopMatrix();
 
-		// 모델 그리기
+        // 그리드 그리기
+        if (grid) {
+            glPushMatrix();
+            drawGrid();
+            glPopMatrix();
+        }
+
+        // 모델 그리기
         drawModel();
 
         glPopMatrix();
@@ -248,30 +257,30 @@ void free()
     free(horn.vPoint);
     for (int i = 0; i < horn.fNum; i++)free(horn.fPoint[i]);
     free(horn.fPoint);
-	for (int i = 0; i < rleg.vNum; i++)free(rleg.vPoint[i]);
-	free(rleg.vPoint);
-	for (int i = 0; i < rleg.fNum; i++)free(rleg.fPoint[i]);
-	free(rleg.fPoint);
-	for (int i = 0; i < lleg.vNum; i++)free(lleg.vPoint[i]);
-	free(lleg.vPoint);
-	for (int i = 0; i < lleg.fNum; i++)free(lleg.fPoint[i]);
-	free(lleg.fPoint);
-	for (int i = 0; i < legCover.vNum; i++)free(legCover.vPoint[i]);
-	free(legCover.vPoint);
-	for (int i = 0; i < legCover.fNum; i++)free(legCover.fPoint[i]);
-	free(legCover.fPoint);
-	for (int i = 0; i < rarm.vNum; i++)free(rarm.vPoint[i]);
-	free(rarm.vPoint);
-	for (int i = 0; i < rarm.fNum; i++)free(rarm.fPoint[i]);
-	free(rarm.fPoint);
-	for (int i = 0; i < larm.vNum; i++)free(larm.vPoint[i]);
-	free(larm.vPoint);
-	for (int i = 0; i < larm.fNum; i++)free(larm.fPoint[i]);
-	free(larm.fPoint);
-	for (int i = 0; i < armCover.vNum; i++)free(armCover.vPoint[i]);
-	free(armCover.vPoint);
-	for (int i = 0; i < armCover.fNum; i++)free(armCover.fPoint[i]);
-	free(armCover.fPoint);
+    for (int i = 0; i < rleg.vNum; i++)free(rleg.vPoint[i]);
+    free(rleg.vPoint);
+    for (int i = 0; i < rleg.fNum; i++)free(rleg.fPoint[i]);
+    free(rleg.fPoint);
+    for (int i = 0; i < lleg.vNum; i++)free(lleg.vPoint[i]);
+    free(lleg.vPoint);
+    for (int i = 0; i < lleg.fNum; i++)free(lleg.fPoint[i]);
+    free(lleg.fPoint);
+    for (int i = 0; i < legCover.vNum; i++)free(legCover.vPoint[i]);
+    free(legCover.vPoint);
+    for (int i = 0; i < legCover.fNum; i++)free(legCover.fPoint[i]);
+    free(legCover.fPoint);
+    for (int i = 0; i < rarm.vNum; i++)free(rarm.vPoint[i]);
+    free(rarm.vPoint);
+    for (int i = 0; i < rarm.fNum; i++)free(rarm.fPoint[i]);
+    free(rarm.fPoint);
+    for (int i = 0; i < larm.vNum; i++)free(larm.vPoint[i]);
+    free(larm.vPoint);
+    for (int i = 0; i < larm.fNum; i++)free(larm.fPoint[i]);
+    free(larm.fPoint);
+    for (int i = 0; i < armCover.vNum; i++)free(armCover.vPoint[i]);
+    free(armCover.vPoint);
+    for (int i = 0; i < armCover.fNum; i++)free(armCover.fPoint[i]);
+    free(armCover.fPoint);
 }
 
 void drawModel()
@@ -343,7 +352,7 @@ void drawRect() {
     glDisable(GL_LIGHTING);
     glColor3f(floorColor[0], floorColor[1], floorColor[2]);
 
-	// 텍스처가 활성화된 경우에만 텍스처를 사용
+    // 텍스처가 활성화된 경우에만 텍스처를 사용
     if (texture) {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, textureID[0]);
@@ -367,21 +376,59 @@ void drawRect() {
     glEnable(GL_LIGHTING);
 }
 
+void drawGrid() {
+    glDisable(GL_LIGHTING); 
+    glDisable(GL_TEXTURE_2D); 
+    glLineWidth(1.0f); 
+
+    // 일반 격자선 (회색)
+    glColor3f(0.3f, 0.3f, 0.3f);
+    glBegin(GL_LINES);
+    for (float x = -50.0f; x <= 50.0f; x += 5.0f) {
+        if (x != 0.0f) { // 중앙선은 제외
+			glVertex3f(x, -20.9f, -50.0f); // 바닥 바로 위에 위치
+            glVertex3f(x, -20.9f, 50.0f);
+        }
+    }
+    for (float z = -50.0f; z <= 50.0f; z += 5.0f) {
+        if (z != 0.0f) { // 중앙선은 제외
+            glVertex3f(-50.0f, -20.9f, z);
+            glVertex3f(50.0f, -20.9f, z);
+        }
+    }
+    glEnd();
+
+    // 중앙 십자선 (검은색)
+    glColor3f(0.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+    glVertex3f(0.0f, -20.9f, -50.0f);
+    glVertex3f(0.0f, -20.9f, 50.0f);
+    glVertex3f(-50.0f, -20.9f, 0.0f);
+    glVertex3f(50.0f, -20.9f, 0.0f);
+    glEnd();
+
+    glEnable(GL_LIGHTING); // 조명 복원
+}
+
 void drawLine() {
     glDisable(GL_LIGHTING);
     glViewport(0, 0, 800, 800);
+
     glPushMatrix();
     gluLookAt(0.0, 50.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
     glColor3f(0.0, 0.0, 0.0);
     glLineWidth(5.0);
+
     glBegin(GL_LINES);
     glVertex3f(-50.0, 0.0, 0.0);
     glVertex3f(50.0, 0.0, 0.0);
     glVertex3f(0.0, 0.0, -50.0);
     glVertex3f(0.0, 0.0, 50.0);
     glEnd();
+
     glLineWidth(1.0);
     glPopMatrix();
+
     glEnable(GL_LIGHTING);
 }
 
@@ -434,21 +481,26 @@ void keyboard(unsigned char key, int x, int y) {
         glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
         break;
     case 'y':
-        lightPosition[1] += lightMoveSpeed; 
+        lightPosition[1] += lightMoveSpeed;
         glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
         break;
     case 'Y':
-        lightPosition[1] -= lightMoveSpeed; 
+        lightPosition[1] -= lightMoveSpeed;
         glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
         break;
     case 'z':
-		lightPosition[2] -= lightMoveSpeed;
-		glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-		break;
+        lightPosition[2] -= lightMoveSpeed;
+        glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+        break;
     case 'Z':
-		lightPosition[2] += lightMoveSpeed;
-		glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
-		break;
+        lightPosition[2] += lightMoveSpeed;
+        glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+        break;
+    case 'g':
+    case 'G':
+        grid = !grid; // 그리드 토글
+        printf("그리드 %s\n", grid ? "On" : "Off");
+        break;
     }
     glutPostRedisplay();
 }
@@ -456,11 +508,15 @@ void keyboard(unsigned char key, int x, int y) {
 void menuCallback(int value) {
     switch (value) {
     case 0: // 바닥 색상 변경
-        floorColor[0] = (float)rand() / RAND_MAX; floorColor[1] = (float)rand() / RAND_MAX; floorColor[2] = (float)rand() / RAND_MAX;
+        floorColor[0] = (float)rand() / RAND_MAX;
+        floorColor[1] = (float)rand() / RAND_MAX;
+        floorColor[2] = (float)rand() / RAND_MAX;
         printf("바닥 색상 변경: RGB(%.2f, %.2f, %.2f)\n", floorColor[0], floorColor[1], floorColor[2]);
         break;
     case 1: // 모델 색상 변경
-        modelColor[0] = (float)rand() / RAND_MAX; modelColor[1] = (float)rand() / RAND_MAX; modelColor[2] = (float)rand() / RAND_MAX;
+        modelColor[0] = (float)rand() / RAND_MAX;
+        modelColor[1] = (float)rand() / RAND_MAX;
+        modelColor[2] = (float)rand() / RAND_MAX;
         printf("모델 색상 변경: RGB(%.2f, %.2f, %.2f)\n", modelColor[0], modelColor[1], modelColor[2]);
         break;
     case 2: // 조명 토글
@@ -475,8 +531,12 @@ void menuCallback(int value) {
         }
         break;
     case 3: // 조명 색상 변경
-        diffuse[0] = (float)rand() / RAND_MAX; diffuse[1] = (float)rand() / RAND_MAX; diffuse[2] = (float)rand() / RAND_MAX; // diffuse
-        specular[0] = (float)rand() / RAND_MAX; specular[1] = (float)rand() / RAND_MAX; specular[2] = (float)rand() / RAND_MAX; // specular
+        diffuse[0] = (float)rand() / RAND_MAX;
+        diffuse[1] = (float)rand() / RAND_MAX;
+        diffuse[2] = (float)rand() / RAND_MAX;
+        specular[0] = (float)rand() / RAND_MAX;
+        specular[1] = (float)rand() / RAND_MAX;
+        specular[2] = (float)rand() / RAND_MAX;
         glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
         glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
         printf("조명 색상 변경\n");
@@ -530,7 +590,6 @@ void animate(int value) {
         animAngle += animDirection * 0.4f;
 
         glutPostRedisplay();
-        glutTimerFunc(16, animate, 0); 
+        glutTimerFunc(16, animate, 0);
     }
-
 }

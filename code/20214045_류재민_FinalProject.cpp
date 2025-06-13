@@ -193,12 +193,15 @@ void display() {
             0.0, 0.0, 0.0,
             cameras[i].upX, cameras[i].upY, cameras[i].upZ);
 
+        // 조명 설정 (카메라 뷰 적용 후 조명 위치 설정)
+        glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+
         // 조명 그리기
         if (light) {
             glDisable(GL_LIGHTING);
             glPushMatrix();
+            glTranslatef(lightPosition[0], lightPosition[1], lightPosition[2]);
             glColor3f(0.0, 0.0, 0.0);
-            glTranslated(lightPosition[0], lightPosition[1], lightPosition[2]);
             glutWireCube(2.0);
             glPopMatrix();
             glEnable(GL_LIGHTING);
@@ -350,19 +353,33 @@ void drawModel()
 }
 
 void drawRect() {
-    glDisable(GL_LIGHTING);
-    glColor3f(floorColor[0], floorColor[1], floorColor[2]);
+    glEnable(GL_LIGHTING);
 
-    // 텍스처가 활성화된 경우에만 텍스처를 사용
+	// 바닥 색상 설정
+    if (!light) {
+        glDisable(GL_LIGHTING);
+        glColor3f(floorColor[0], floorColor[1], floorColor[2]);
+    }
+    else {
+        glEnable(GL_LIGHTING);
+        glMaterialfv(GL_FRONT, GL_DIFFUSE, floorColor);
+    }
+
+    // 텍스처가 활성화된 경우
     if (texture) {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, textureID[0]);
+        // 텍스처와 조명 조합 모드 설정
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     }
     else {
         glDisable(GL_TEXTURE_2D);
     }
 
+    // 사각형 바닥 그리기
     glBegin(GL_QUADS);
+    // 법선 벡터 설정 (바닥은 위를 향하므로 (0, 1, 0))
+    glNormal3f(0.0f, 1.0f, 0.0f);
     if (texture) glTexCoord2f(0.0f, 0.0f);
     glVertex3f(-25.0f, -21.0f, -45.0f);
     if (texture) glTexCoord2f(1.0f, 0.0f);
@@ -373,8 +390,10 @@ void drawRect() {
     glVertex3f(-25.0f, -21.0f, 40.0f);
     glEnd();
 
-    glDisable(GL_TEXTURE_2D);
-    glEnable(GL_LIGHTING);
+    // 텍스처 비활성화
+    if (texture) {
+        glDisable(GL_TEXTURE_2D);
+    }
 }
 
 void drawGrid() {

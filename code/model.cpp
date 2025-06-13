@@ -1,9 +1,6 @@
 #pragma warning(disable:4996)
 #include "model.h"
 
-extern int texture;
-extern GLuint textureID[2];
-
 Model ObjLoad(const char* name)
 {
     Model model = { 0 };
@@ -88,6 +85,12 @@ void rendering(Model model, int sort)
         if(sort == 3) glBindTexture(GL_TEXTURE_2D, textureID[3]);
         if(sort == 4) glBindTexture(GL_TEXTURE_2D, textureID[4]);
         if(sort == 5) glBindTexture(GL_TEXTURE_2D, textureID[5]);
+		if (sort == 6) glBindTexture(GL_TEXTURE_2D, textureID[6]);
+		if (sort == 7) glBindTexture(GL_TEXTURE_2D, textureID[7]);
+		if (sort == 8) glBindTexture(GL_TEXTURE_2D, textureID[8]);
+		if (sort == 9) glBindTexture(GL_TEXTURE_2D, textureID[9]);
+		if (sort == 10) glBindTexture(GL_TEXTURE_2D, textureID[10]);
+		if (sort == 11) glBindTexture(GL_TEXTURE_2D, textureID[11]);
     }
     else {
         glDisable(GL_TEXTURE_2D);

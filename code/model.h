@@ -23,6 +23,8 @@ extern "C" {
     extern Model dino;
     extern GLfloat modelColor[3];
     extern int light;
+    extern int texture;
+    extern GLuint textureID[12];
 
 #ifdef __cplusplus
 }

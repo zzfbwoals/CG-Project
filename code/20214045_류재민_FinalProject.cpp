@@ -21,7 +21,14 @@ Model eye;
 Model eyeground;
 Model teeth;
 Model horn;
+Model rleg;
+Model lleg;
+Model legCover;
+Model rarm;
+Model larm;
+Model armCover;
 void free();
+void drawModel();
 
 // 색상
 GLfloat floorColor[3] = { 0.7, 0.7, 0.7 }; // 바닥 기본 색상
@@ -71,8 +78,20 @@ GLfloat diffuse[4] = { 0.5, 0.5, 0.5, 1.0 };
 GLfloat specular[4] = { 1.0, 1.0, 1.0, 1.0 };
 
 // 텍스처
-GLuint textureID[6];
+GLuint textureID[12];
 void initTexture(GLuint* texture, const char* path);
+
+/*****************
+     5번 문제
+*****************/
+
+// 애니메이션
+float baseAmplitude = 1.5f; // 기본 진폭
+float speed = 20.0f; // 애니메이션 속도
+float animAngle = 0.0f; // 애니메이션 각도
+int animDirection = 1; // 애니메이션 방향 (1: 증가, -1: 감소)
+int animation = 0; // 애니메이션 상태 (1: 켜짐, 0: 꺼짐)
+void animate(int value);
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
@@ -87,17 +106,25 @@ int main(int argc, char** argv) {
     glutReshapeFunc(reshape);
     glutSpecialFunc(specialKeys);
     glutKeyboardFunc(keyboard);
+    glutTimerFunc(0, animate, 0);
     glutMainLoop();
     free();
     return 0;
 }
 
 void init() {
+	// 모델 불러오기
     dino = ObjLoad("dino.obj");
     eye = ObjLoad("eye.obj");
     eyeground = ObjLoad("eyeground.obj");
     teeth = ObjLoad("teeth.obj");
     horn = ObjLoad("horn.obj");
+    rleg = ObjLoad("rleg.obj");
+    lleg = ObjLoad("lleg.obj");
+	legCover = ObjLoad("legCover.obj");
+	rarm = ObjLoad("rarm.obj");
+	larm = ObjLoad("larm.obj");
+	armCover = ObjLoad("armCover.obj");
 
     glClearColor(0.2, 0.2, 0.2, 0.0);
     glEnable(GL_DEPTH_TEST);
@@ -123,6 +150,7 @@ void init() {
     glutAddMenuEntry("조명 On/Off", 2);
     glutAddMenuEntry("조명 색상 변경", 3);
     glutAddMenuEntry("텍스처 On/Off", 4);
+    glutAddMenuEntry("애니메이션 On/Off", 5);
     glutAttachMenu(GLUT_RIGHT_BUTTON);
 
     // 텍스처 이미지 불러오기
@@ -132,6 +160,13 @@ void init() {
     initTexture(&textureID[3], "eyeground.png"); // 눈 바닥 텍스처
     initTexture(&textureID[4], "teeth.png"); // 이빨 텍스처
     initTexture(&textureID[5], "horn.png"); // 뿔 텍스처
+    initTexture(&textureID[6], "dino.png"); // 오른다리 텍스처
+    initTexture(&textureID[7], "dino.png"); // 왼다리 텍스처
+	initTexture(&textureID[8], "dino.png"); // 다리 커버 텍스처
+	initTexture(&textureID[9], "dino.png"); // 오른팔 텍스처
+	initTexture(&textureID[10], "dino.png"); // 왼팔 텍스처
+	initTexture(&textureID[11], "dino.png"); // 팔 커버 텍스처
+
 }
 
 void display() {
@@ -154,19 +189,25 @@ void display() {
             0.0, 0.0, 0.0,
             cameras[i].upX, cameras[i].upY, cameras[i].upZ);
 
+        // 조명 그리기
+        if (light)
+        {
+            glDisable(GL_LIGHTING);
+            glPushMatrix();
+            glColor3f(0.0, 0.0, 0.0);
+            glTranslated(lightPosition[0], lightPosition[1], lightPosition[2]);
+            glutWireCube(2.0);
+            glPopMatrix();
+            glEnable(GL_LIGHTING);
+        }
+
         // 사각형 바닥 그리기
         glPushMatrix();
         drawRect();
         glPopMatrix();
 
-        // 모델 그리기
-        glTranslatef(0.0f, -20.0f, -10.0f);
-        glScalef(0.7f, 0.7f, 0.7f);
-        rendering(dino, 1);
-        rendering(eye, 2);
-        rendering(eyeground, 3);
-        rendering(teeth, 4);
-        rendering(horn, 5);
+		// 모델 그리기
+        drawModel();
 
         glPopMatrix();
     }
@@ -207,6 +248,95 @@ void free()
     free(horn.vPoint);
     for (int i = 0; i < horn.fNum; i++)free(horn.fPoint[i]);
     free(horn.fPoint);
+	for (int i = 0; i < rleg.vNum; i++)free(rleg.vPoint[i]);
+	free(rleg.vPoint);
+	for (int i = 0; i < rleg.fNum; i++)free(rleg.fPoint[i]);
+	free(rleg.fPoint);
+	for (int i = 0; i < lleg.vNum; i++)free(lleg.vPoint[i]);
+	free(lleg.vPoint);
+	for (int i = 0; i < lleg.fNum; i++)free(lleg.fPoint[i]);
+	free(lleg.fPoint);
+	for (int i = 0; i < legCover.vNum; i++)free(legCover.vPoint[i]);
+	free(legCover.vPoint);
+	for (int i = 0; i < legCover.fNum; i++)free(legCover.fPoint[i]);
+	free(legCover.fPoint);
+	for (int i = 0; i < rarm.vNum; i++)free(rarm.vPoint[i]);
+	free(rarm.vPoint);
+	for (int i = 0; i < rarm.fNum; i++)free(rarm.fPoint[i]);
+	free(rarm.fPoint);
+	for (int i = 0; i < larm.vNum; i++)free(larm.vPoint[i]);
+	free(larm.vPoint);
+	for (int i = 0; i < larm.fNum; i++)free(larm.fPoint[i]);
+	free(larm.fPoint);
+	for (int i = 0; i < armCover.vNum; i++)free(armCover.vPoint[i]);
+	free(armCover.vPoint);
+	for (int i = 0; i < armCover.fNum; i++)free(armCover.fPoint[i]);
+	free(armCover.fPoint);
+}
+
+void drawModel()
+{
+    glTranslatef(0.0f, -20.0f, -10.0f);
+    glScalef(0.7f, 0.7f, 0.7f);
+    if (animation) glRotatef(animAngle, 0.0f, 1.0f, 0.5f); // 회전 애니메이션
+
+    // 몸통 (dino)
+    glPushMatrix();
+    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f), 0.0f);
+    rendering(dino, 1);
+    glPopMatrix();
+
+    // 눈 (eye)
+    glPushMatrix();
+    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f), 0.0f);
+    rendering(eye, 2);
+    glPopMatrix();
+
+    // 눈 흰자 (eyeground)
+    glPushMatrix();
+    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f), 0.0f);
+    rendering(eyeground, 3);
+    glPopMatrix();
+
+    // 이빨 (teeth)
+    glPushMatrix();
+    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f), 0.0f);
+    rendering(teeth, 4);
+    glPopMatrix();
+
+    // 뿔 (horn)
+    glPushMatrix();
+    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f), 0.0f);
+    rendering(horn, 5);
+    glPopMatrix();
+
+    // 커버는 진폭으로 인해 비워지는 공간을 메우기 위해 사용하므로 진폭 애니메이션 X
+    rendering(legCover, 8);
+    rendering(armCover, 11);
+
+    // 오른쪽 다리(rleg)
+    glPushMatrix();
+    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f)), 0.0f); // 아래로만 이동
+    rendering(rleg, 6);
+    glPopMatrix();
+
+    // 왼쪽 다리(lleg) - 반대 위상
+    glPushMatrix();
+    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf((animAngle + 180.0f) * 3.14159f / speed) * 0.5f + 0.5f)), 0.0f); // 반대 위상
+    rendering(lleg, 7);
+    glPopMatrix();
+
+    // 오른쪽 팔(rarm)
+    glPushMatrix();
+    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf((animAngle + 180.0f) * 3.14159f / speed) * 0.5f + 0.5f)), 0.0f); // 반대 위상
+    rendering(rarm, 9);
+    glPopMatrix();
+
+    // 왼쪽 팔(larm) - 반대 위상
+    glPushMatrix();
+    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f)), 0.0f); // 아래로만 이동
+    rendering(larm, 10);
+    glPopMatrix();
 }
 
 void drawRect() {
@@ -279,6 +409,9 @@ void specialKeys(int key, int x, int y) {
 }
 
 void keyboard(unsigned char key, int x, int y) {
+    // 조명 이동 속도
+    float lightMoveSpeed = 1.0f; // 한 번에 1.0 단위로 이동
+
     switch (key) {
     case '1':
         viewport = 2; // 위
@@ -292,6 +425,30 @@ void keyboard(unsigned char key, int x, int y) {
     case '4':
         viewport = 1; // 무작위
         break;
+    case 'x':
+        lightPosition[0] += lightMoveSpeed;
+        glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+        break;
+    case 'X':
+        lightPosition[0] -= lightMoveSpeed;
+        glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+        break;
+    case 'y':
+        lightPosition[1] += lightMoveSpeed; 
+        glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+        break;
+    case 'Y':
+        lightPosition[1] -= lightMoveSpeed; 
+        glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+        break;
+    case 'z':
+		lightPosition[2] -= lightMoveSpeed;
+		glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+		break;
+    case 'Z':
+		lightPosition[2] += lightMoveSpeed;
+		glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
+		break;
     }
     glutPostRedisplay();
 }
@@ -333,6 +490,16 @@ void menuCallback(int value) {
             printf("텍스처 Off\n");
         }
         break;
+    case 5: // 애니메이션 토글
+        animation = !animation;
+        if (animation) {
+            printf("애니메이션 On\n");
+            glutTimerFunc(0, animate, 0);
+        }
+        else {
+            printf("애니메이션 Off\n");
+        }
+        break;
     }
     glutPostRedisplay();
 }
@@ -352,4 +519,18 @@ void initTexture(GLuint* texture, const char* path)
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glEnable(GL_TEXTURE_2D);
+}
+
+void animate(int value) {
+    if (animation) {
+        // -5도 ~ 5도 사이를 오감
+        if (animAngle > 5.0f) animDirection = -1;
+        if (animAngle < -5.0f) animDirection = 1;
+
+        animAngle += animDirection * 0.4f;
+
+        glutPostRedisplay();
+        glutTimerFunc(16, animate, 0); 
+    }
+
 }

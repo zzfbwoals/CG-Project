@@ -1,3 +1,4 @@
+// 20214045_류재민_FinalProject
 #pragma warning(disable:4996)
 #include "model.h"
 
@@ -77,7 +78,6 @@ void rendering(Model model, int sort)
         glMaterialfv(GL_FRONT, GL_DIFFUSE, modelColor);
     }
 
-    // 텍스처가 활성화된 경우에만 텍스처를 사용 - 함수 시작 시 한 번만 활성화
     if (texture) {
         glEnable(GL_TEXTURE_2D);
         if(sort == 1) glBindTexture(GL_TEXTURE_2D, textureID[1]);
@@ -107,12 +107,12 @@ void rendering(Model model, int sort)
         glNormal3dv(normal);
 
         for (int j = 0; j < 3; j++) {
-            // 각 정점마다 다른 텍스처 좌표 사용 (삼각형의 위치에 따라 다름)
             if (texture) {
                 // 공룡의 위치에 따라 텍스처 좌표 계산
                 float u = (model.vPoint[model.fPoint[i][j]][0] + 20.0f) / 40.0f;
                 float v = (model.vPoint[model.fPoint[i][j]][2] + 20.0f) / 40.0f;
                 glTexCoord2f(u, v);
+                glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
             }
 
             glVertex3f(model.vPoint[model.fPoint[i][j]][0], model.vPoint[model.fPoint[i][j]][1], model.vPoint[model.fPoint[i][j]][2]);
@@ -121,7 +121,6 @@ void rendering(Model model, int sort)
         glEnd();
     }
 
-    // 텍스처 상태 복원
     if (texture) {
         glDisable(GL_TEXTURE_2D);
     }

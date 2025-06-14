@@ -42,7 +42,7 @@ void drawRect();
 *****************/
 
 // 뷰포트
-int viewportPos[16] = {
+int viewportPosition[16] = {
     0, 0, 400, 400,     // 0: 앞
     400, 0, 400, 400,   // 1: 무작위
     0, 400, 400, 400,   // 2: 위
@@ -76,7 +76,7 @@ void menuCallback(int value);
 GLfloat lightPosition[4] = { 20.0, 20.0, 30.0, 1.0 };
 GLfloat diffuse[4] = { 0.5, 0.5, 0.5, 1.0 };
 GLfloat specular[4] = { 1.0, 1.0, 1.0, 1.0 };
-float lightMoveSpeed = 1.0f; // 조명 이동 속도
+float lightSpeed = 1.0f; // 조명 이동 속도
 
 // 텍스처
 GLuint textureID[12];
@@ -88,9 +88,9 @@ void initTexture(GLuint* texture, const char* path);
 
 // 애니메이션
 float baseAmplitude = 1.5f; // 기본 진폭
-float speed = 20.0f; // 애니메이션 속도
-float animAngle = 0.0f; // 애니메이션 각도
-int animDirection = 1; // 애니메이션 방향 (1: 증가, -1: 감소)
+float animationSpeed = 20.0f; // 애니메이션 속도
+float animationAngle = 0.0f; // 애니메이션 각도
+int animationDirection = 1; // 애니메이션 방향 (1: 증가, -1: 감소)
 int animation = 0; // 애니메이션 상태 (1: 켜짐, 0: 꺼짐)
 void animate(int value);
 
@@ -181,7 +181,13 @@ void display() {
     for (int i = 0; i < 4; i++) {
         glPushMatrix();
 
-        glViewport(viewportPos[i * 4], viewportPos[i * 4 + 1], viewportPos[i * 4 + 2], viewportPos[i * 4 + 3]);
+        /*
+        뷰 포트
+		2 3
+		0 1
+        */
+
+        glViewport(viewportPosition[i * 4], viewportPosition[i * 4 + 1], viewportPosition[i * 4 + 2], viewportPosition[i * 4 + 3]);
 
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
@@ -291,35 +297,35 @@ void drawModel()
 {
     glTranslatef(0.0f, -20.0f, -10.0f);
     glScalef(0.7f, 0.7f, 0.7f);
-    if (animation) glRotatef(animAngle, 0.0f, 1.0f, 0.5f); // 회전 애니메이션
+    if (animation) glRotatef(animationAngle, 0.0f, 1.0f, 0.5f); // 회전 애니메이션
 
     // 몸통 (dino)
     glPushMatrix();
-    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f), 0.0f);
+    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animationAngle * 3.14159f / animationSpeed) * 0.5f + 0.5f), 0.0f);
     rendering(dino, 1);
     glPopMatrix();
 
     // 눈 (eye)
     glPushMatrix();
-    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f), 0.0f);
+    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animationAngle * 3.14159f / animationSpeed) * 0.5f + 0.5f), 0.0f);
     rendering(eye, 2);
     glPopMatrix();
 
     // 눈 흰자 (eyeground)
     glPushMatrix();
-    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f), 0.0f);
+    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animationAngle * 3.14159f / animationSpeed) * 0.5f + 0.5f), 0.0f);
     rendering(eyeground, 3);
     glPopMatrix();
 
     // 이빨 (teeth)
     glPushMatrix();
-    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f), 0.0f);
+    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animationAngle * 3.14159f / animationSpeed) * 0.5f + 0.5f), 0.0f);
     rendering(teeth, 4);
     glPopMatrix();
 
     // 뿔 (horn)
     glPushMatrix();
-    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f), 0.0f);
+    if (animation) glTranslatef(0.0f, -baseAmplitude * (sinf(animationAngle * 3.14159f / animationSpeed) * 0.5f + 0.5f), 0.0f);
     rendering(horn, 5);
     glPopMatrix();
 
@@ -329,25 +335,25 @@ void drawModel()
 
     // 오른쪽 다리(rleg)
     glPushMatrix();
-    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f)), 0.0f); // 아래로만 이동
+    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf(animationAngle * 3.14159f / animationSpeed) * 0.5f + 0.5f)), 0.0f); // 아래로만 이동
     rendering(rleg, 6);
     glPopMatrix();
 
     // 왼쪽 다리(lleg) - 반대 위상
     glPushMatrix();
-    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf((animAngle + 180.0f) * 3.14159f / speed) * 0.5f + 0.5f)), 0.0f); // 반대 위상
+    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf((animationAngle + 180.0f) * 3.14159f / animationSpeed) * 0.5f + 0.5f)), 0.0f); // 반대 위상
     rendering(lleg, 7);
     glPopMatrix();
 
     // 오른쪽 팔(rarm)
     glPushMatrix();
-    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf((animAngle + 180.0f) * 3.14159f / speed) * 0.5f + 0.5f)), 0.0f); // 반대 위상
+    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf((animationAngle + 180.0f) * 3.14159f / animationSpeed) * 0.5f + 0.5f)), 0.0f); // 반대 위상
     rendering(rarm, 9);
     glPopMatrix();
 
     // 왼쪽 팔(larm) - 반대 위상
     glPushMatrix();
-    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf(animAngle * 3.14159f / speed) * 0.5f + 0.5f)), 0.0f); // 아래로만 이동
+    if (animation) glTranslatef(0.0f, -(baseAmplitude * (sinf(animationAngle * 3.14159f / animationSpeed) * 0.5f + 0.5f)), 0.0f); // 아래로만 이동
     rendering(larm, 10);
     glPopMatrix();
 }
@@ -355,7 +361,6 @@ void drawModel()
 void drawRect() {
     glEnable(GL_LIGHTING);
 
-	// 바닥 색상 설정
     if (!light) {
         glDisable(GL_LIGHTING);
         glColor3f(floorColor[0], floorColor[1], floorColor[2]);
@@ -365,7 +370,6 @@ void drawRect() {
         glMaterialfv(GL_FRONT, GL_DIFFUSE, floorColor);
     }
 
-    // 텍스처가 활성화된 경우
     if (texture) {
         glEnable(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, textureID[0]);
@@ -376,7 +380,6 @@ void drawRect() {
         glDisable(GL_TEXTURE_2D);
     }
 
-    // 사각형 바닥 그리기
     glBegin(GL_QUADS);
     // 법선 벡터 설정 (바닥은 위를 향하므로 (0, 1, 0))
     glNormal3f(0.0f, 1.0f, 0.0f);
@@ -390,7 +393,6 @@ void drawRect() {
     glVertex3f(-25.0f, -21.0f, 40.0f);
     glEnd();
 
-    // 텍스처 비활성화
     if (texture) {
         glDisable(GL_TEXTURE_2D);
     }
@@ -427,11 +429,12 @@ void drawGrid() {
     glVertex3f(50.0f, -20.9f, 0.0f);
     glEnd();
 
-    glEnable(GL_LIGHTING); // 조명 복원
+    glEnable(GL_LIGHTING); 
 }
 
 void drawLine() {
     glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
     glViewport(0, 0, 800, 800);
 
     glPushMatrix();
@@ -456,18 +459,11 @@ void specialKeys(int key, int x, int y) {
     if (viewport == -1) return;
 
     Camera* c = &cameras[viewport];
-    if (key == GLUT_KEY_UP) {
-        c->theta -= 5.0;
-    }
-    if (key == GLUT_KEY_DOWN) {
-        c->theta += 5.0;
-    }
-    if (key == GLUT_KEY_LEFT) {
-        c->phi -= 5.0;
-    }
-    if (key == GLUT_KEY_RIGHT) {
-        c->phi += 5.0;
-    }
+
+    if (key == GLUT_KEY_UP) c->theta -= 5.0;
+    if (key == GLUT_KEY_DOWN) c->theta += 5.0;
+    if (key == GLUT_KEY_LEFT) c->phi -= 5.0;
+    if (key == GLUT_KEY_RIGHT) c->phi += 5.0;
 
     if (c->theta > 360.0) c->theta = fmod((double)c->theta, 360.0);
     if (c->phi > 360.0) c->phi = fmod((double)c->phi, 360.0);
@@ -478,43 +474,43 @@ void specialKeys(int key, int x, int y) {
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {
     case '1':
-        viewport = 2; // 위
+        viewport = 2; 
         printf("뷰포트 선택: 위\n");
         break;
     case '2':
-        viewport = 3; // 옆
+        viewport = 3; 
         printf("뷰포트 선택: 옆\n");
         break;
     case '3':
-        viewport = 0; // 앞
+        viewport = 0; 
         printf("뷰포트 선택: 앞\n");
         break;
     case '4':
-        viewport = 1; // 무작위
+        viewport = 1; 
         printf("뷰포트 선택: 무작위\n");
         break;
     case 'x':
-        lightPosition[0] += lightMoveSpeed;
+        lightPosition[0] += lightSpeed;
         glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
         break;
     case 'X':
-        lightPosition[0] -= lightMoveSpeed;
+        lightPosition[0] -= lightSpeed;
         glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
         break;
     case 'y':
-        lightPosition[1] += lightMoveSpeed;
+        lightPosition[1] += lightSpeed;
         glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
         break;
     case 'Y':
-        lightPosition[1] -= lightMoveSpeed;
+        lightPosition[1] -= lightSpeed;
         glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
         break;
     case 'z':
-        lightPosition[2] -= lightMoveSpeed;
+        lightPosition[2] -= lightSpeed;
         glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
         break;
     case 'Z':
-        lightPosition[2] += lightMoveSpeed;
+        lightPosition[2] += lightSpeed;
         glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);
         break;
     case 'g':
@@ -651,11 +647,11 @@ void initTexture(GLuint* texture, const char* path)
 
 void animate(int value) {
     if (animation) {
-        // -5도 ~ 5도 사이를 오감
-        if (animAngle > 5.0f) animDirection = -1;
-        if (animAngle < -5.0f) animDirection = 1;
+        // -5도 ~ 5도 사이
+        if (animationAngle > 5.0f) animationDirection = -1;
+        if (animationAngle < -5.0f) animationDirection = 1;
 
-        animAngle += animDirection * 0.4f;
+        animationAngle += animationDirection * 0.4f;
 
         glutPostRedisplay();
         glutTimerFunc(16, animate, 0);

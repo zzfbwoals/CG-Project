@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
     void eyePosition(int index);
-    void initCamera(int index); // 추가: 초기 카메라 설정 함수
+    void initCamera(int index);
 
     extern Camera cameras[4];
     extern int viewport;
